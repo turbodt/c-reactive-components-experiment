@@ -5,6 +5,7 @@
 #include <fcntl.h>
 #include <time.h>
 #include <string.h>
+#include "xre.h"
 
 
 int kbhit(void) {
@@ -31,207 +32,6 @@ int kbhit(void) {
 
     return 0;
 }
-
-
-//------------------------------------------------------------------------------
-
-
-struct IComponent;
-struct IContext;
-
-struct IContextState {
-    void * value;
-    void (*destructor)(void *);
-};
-
-
-struct IComponentState {
-    void * value;
-};
-
-
-struct IContext {
-    size_t children_index;
-    size_t children_size;
-    struct IContext **children;
-
-    size_t states_index;
-    size_t states_size;
-    struct IContextState **states;
-    struct IComponentState (*use_state)(
-        struct IContext *,
-        void *(*)(void),
-        void (*)(void *)
-    );
-
-    void(*render)(struct IContext *, struct IComponent *, void *);
-};
-
-
-struct ContextPrivate {
-    struct IContext base;
-    struct IComponent * component;
-};
-
-
-struct IComponent {
-    char const * type;
-    void(*make)(struct IContext *, void *);
-};
-
-struct ComponentPrivate {
-    struct IComponent base;
-    void(*renderer)(struct IContext *, void const *);
-};
-
-
-//------------------------------------------------------------------------------
-
-
-void component_make(struct IContext *cxt, void *props) {
-    (void) cxt;
-    (void) props;
-};
-
-struct IComponent * component_alloc(
-    char const * type,
-    void(*renderer)(struct IContext *, void const *)
-) {
-    struct ComponentPrivate * component = (struct ComponentPrivate *) malloc(
-        sizeof(struct ComponentPrivate)
-    );
-
-    component->renderer = renderer;
-    component->base.type = type;
-    component->base.make = component_make;
-
-    return (struct IComponent *) component;
-};
-
-
-void component_destroy(struct IComponent * component) {
-    free(component);
-}
-
-
-//------------------------------------------------------------------------------
-
-struct IContextState * context_state_alloc(
-    void * value,
-    void (*destructor)(void *)
-) {
-    struct IContextState * state = (struct IContextState *) malloc(
-        sizeof(struct IContextState)
-    );
-
-    state->value = value;
-    state->destructor = destructor;
-
-    return state;
-};
-
-
-void context_state_destroy(struct IContextState *state) {
-    state->destructor(state->value);
-    free(state);
-};
-
-
-//------------------------------------------------------------------------------
-
-
-static struct IContext * context_alloc(struct IComponent *);
-
-
-void context_render(
-    struct IContext *parent_cxt,
-    struct IComponent * component,
-    void *props
-) {
-    struct ComponentPrivate * cpt = (struct ComponentPrivate *) (component);
-
-    size_t index = parent_cxt->children_index;
-    parent_cxt->children_index++;
-
-    if (index >= parent_cxt->children_size) {
-        parent_cxt->children = (struct IContext **) realloc(
-            parent_cxt->children,
-            (parent_cxt->children_size + 1) * sizeof(struct IContext *)
-        );
-        parent_cxt->children_size++;
-
-        parent_cxt->children[index] = context_alloc(component);
-    }
-    struct IContext * cxt = parent_cxt->children[index];
-    cxt->children_index = 0;
-    cxt->states_index = 0;
-
-    cpt->renderer(cxt, props);
-};
-
-
-struct IComponentState context_use_state(
-    struct IContext *cxt,
-    void *(*constructor)(void),
-    void (*destructor)(void *)
-) {
-    size_t index = cxt->states_index;
-    cxt->states_index++;
-
-    if (index >= cxt->states_size) {
-        cxt->states = (struct IContextState **) realloc(
-            cxt->states,
-            (cxt->states_size + 1) * sizeof(struct IContext *)
-        );
-        cxt->states_size++;
-
-        cxt->states[index] = context_state_alloc(constructor(), destructor);
-    }
-
-    struct IContextState * state = cxt->states[index];
-
-    return (struct IComponentState){
-        .value=state->value,
-    };
-};
-
-
-struct IContext * context_alloc(struct IComponent *component) {
-    struct ContextPrivate * cxt = (struct ContextPrivate *) malloc(
-        sizeof(struct ContextPrivate)
-    );
-
-    cxt->base.children_index = 0;
-    cxt->base.children_size = 0;
-    cxt->base.children = NULL;
-    cxt->base.states_index = 0;
-    cxt->base.states_size = 0;
-    cxt->base.states = NULL;
-    cxt->base.use_state = context_use_state;
-    cxt->base.render = context_render;
-    cxt->component = component;
-
-    return (struct IContext *) cxt;
-};
-
-void context_destroy(struct IContext * cxt) {
-    for (size_t index = 0; index < cxt->children_size; index++) {
-        context_destroy(cxt->children[index]);
-        cxt->children[index] = NULL;
-    }
-    free(cxt->children);
-    cxt->children = NULL;
-
-    for (size_t index = 0; index < cxt->states_size; index++) {
-        context_state_destroy(cxt->states[index]);
-        cxt->states[index] = NULL;
-    }
-    free(cxt->states);
-    cxt->states = NULL;
-
-    free(cxt);
-};
-
 //------------------------------------------------------------------------------
 
 void text_renderer(struct IContext * ctx, void const * props) {
@@ -358,9 +158,7 @@ int main(void) {
 
     while (!kbhit()) {
 
-        context->states_index = 0;
-        context->children_index = 0;
-        context->render(context, app, NULL);
+        context_render_frame(context, app, NULL);
 
         usleep(16000);
 

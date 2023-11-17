@@ -1,0 +1,3 @@
+clang
+%c -Isrc/xre/include
+-std=c11
