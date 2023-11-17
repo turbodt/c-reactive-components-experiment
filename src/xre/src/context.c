@@ -60,7 +60,7 @@ void context_destroy(struct IContext * context) {
 void context_render_frame(
     struct IContext *parent_context,
     struct IComponent * component,
-    void *props
+    void const *props
 ) {
     ContextPrivate * pctx = TO_PRIV(parent_context);
 
@@ -102,7 +102,7 @@ struct IComponentState context_use_state(
 void context_use(
     struct IContext *parent_context,
     struct IComponent * component,
-    void *props
+    void const *props
 ) {
 
     ContextPrivate * pctx = TO_PRIV(parent_context);
