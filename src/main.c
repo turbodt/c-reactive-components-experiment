@@ -82,7 +82,7 @@ struct TimeLoggerProps {
 void time_logger_renderer(struct IContext * ctx, void const * props) {
     struct TimeLoggerProps const * p = props;
 
-    struct IComponentState str_state = ctx->use_state(
+    struct IComponentState str_state = context_use_state(
         ctx,
         (void *(*)(void))string_alloc,
         (void (*)(void *)) string_destroy
@@ -99,7 +99,7 @@ void time_logger_renderer(struct IContext * ctx, void const * props) {
 
     string_set(str, message);
 
-    ctx->render(ctx, text, message);
+    context_use(ctx, text, message);
 }
 
 
@@ -121,7 +121,7 @@ void current_time_destroy(time_t *now) {
 void app_renderer(struct IContext * ctx, void const *props) {
     (void) props;
 
-    struct IComponentState start_time_state = ctx->use_state(
+    struct IComponentState start_time_state = context_use_state(
         ctx,
         (void *(*)(void)) current_time_alloc,
         (void(*)(void *)) current_time_destroy
@@ -138,10 +138,10 @@ void app_renderer(struct IContext * ctx, void const *props) {
     char message[100] = "";
     snprintf(message, sizeof(message) - 1, "Elapsed seconds: %d", difftime_sec);
 
-    ctx->render(ctx, time_logger, &(struct TimeLoggerProps){.time=*start_time, .header="Initial time"});
-    ctx->render(ctx, time_logger, &(struct TimeLoggerProps){.time=now, .header="Current time"});
-    ctx->render(ctx, text, message);
-    ctx->render(ctx, text, "Press any key to stop");
+    context_use(ctx, time_logger, &(struct TimeLoggerProps){.time=*start_time, .header="Initial time"});
+    context_use(ctx, time_logger, &(struct TimeLoggerProps){.time=now, .header="Current time"});
+    context_use(ctx, text, message);
+    context_use(ctx, text, "Press any key to stop");
 };
 
 

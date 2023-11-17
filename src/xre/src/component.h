@@ -5,14 +5,7 @@
 struct IContext;
 
 
-struct IComponentState {
-    void * value;
-};
-
-
-struct IComponent {
-    char const * type;
-};
+struct IComponent;
 
 
 typedef void (*ComponentRenderer)(struct IContext *, void const *);
@@ -22,7 +15,7 @@ struct IComponent * component_alloc(char const *, ComponentRenderer);
 void component_destroy(struct IComponent *);
 
 
+char const * component_get_type(struct IComponent *);
 void component_render(struct IComponent *, struct IContext *, void const *);
-
 
 #endif

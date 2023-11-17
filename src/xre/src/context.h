@@ -7,21 +7,26 @@
 #include <stdlib.h>
 
 
-struct IContext {
-    struct IComponentState (*use_state)(
-        struct IContext *,
-        void *(*)(void),
-        void (*)(void *)
-    );
-
-    void(*render)(struct IContext *, struct IComponent *, void *);
+struct IComponentState {
+    void * value;
 };
+
+
+struct IContext;
 
 
 struct IContext * context_alloc(struct IComponent *);
 void context_destroy(struct IContext *);
 
+
 void context_render_frame(struct IContext *, struct IComponent *, void *);
 
+void context_use(struct IContext *, struct IComponent *, void *);
+
+struct IComponentState context_use_state(
+    struct IContext *,
+    void *(*)(void),
+    void (*)(void *)
+);
 
 #endif

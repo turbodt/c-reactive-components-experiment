@@ -5,9 +5,7 @@
 #include <stdlib.h>
 
 
-struct IContextState {
-    void * value;
-};
+struct IContextState;
 
 struct IContextState * context_state_alloc(void *, void (*)(void *));
 void context_state_destroy(struct IContextState *);
