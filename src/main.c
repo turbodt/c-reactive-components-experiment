@@ -82,7 +82,7 @@ struct TimeLoggerProps {
 void time_logger_renderer(struct IContext * ctx, void const * props) {
     struct TimeLoggerProps const * p = props;
 
-    struct IComponentState str_state = context_use_state(
+    struct IComponentRef str_state = context_use_ref(
         ctx,
         (void *(*)(void))string_alloc,
         (void (*)(void *)) string_destroy
@@ -121,7 +121,7 @@ void current_time_destroy(time_t *now) {
 void app_renderer(struct IContext * ctx, void const *props) {
     (void) props;
 
-    struct IComponentState start_time_state = context_use_state(
+    struct IComponentRef start_time_state = context_use_ref(
         ctx,
         (void *(*)(void)) current_time_alloc,
         (void(*)(void *)) current_time_destroy

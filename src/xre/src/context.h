@@ -7,7 +7,7 @@
 #include <stdlib.h>
 
 
-struct IComponentState {
+struct IComponentRef {
     void * value;
 };
 
@@ -23,7 +23,7 @@ void context_render_frame(struct IContext *, struct IComponent *, void const *);
 
 void context_use(struct IContext *, struct IComponent *, void const *);
 
-struct IComponentState context_use_state(
+struct IComponentRef context_use_ref(
     struct IContext *,
     void *(*)(void),
     void (*)(void *)

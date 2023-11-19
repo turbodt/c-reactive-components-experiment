@@ -71,7 +71,7 @@ void context_render_frame(
 };
 
 
-struct IComponentState context_use_state(
+struct IComponentRef context_use_ref(
     struct IContext *context,
     void *(*constructor)(void),
     void (*destructor)(void *)
@@ -93,7 +93,7 @@ struct IComponentState context_use_state(
 
     struct IContextState * state = ctx->states[index];
 
-    return CLITERAL(struct IComponentState){
+    return CLITERAL(struct IComponentRef){
         .value=context_state_get(state),
     };
 };
