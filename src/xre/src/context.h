@@ -5,6 +5,7 @@
 #include "./context_state.h"
 #include "./component.h"
 #include <stdlib.h>
+#include <stdarg.h>
 
 
 struct IComponentRef {
@@ -23,10 +24,27 @@ void context_render_frame(struct IContext *, struct IComponent *, void const *);
 
 void context_use(struct IContext *, struct IComponent *, void const *);
 
-struct IComponentRef context_use_ref(
+
+struct IComponentRef * context_use_ref(
     struct IContext *,
     void *(*)(void),
     void (*)(void *)
+);
+
+
+struct IComponentRef * context_use_vref(
+    struct IContext *,
+    void *(*)(va_list),
+    void (*)(void *),
+    va_list
+);
+
+
+struct IComponentRef * context_use_ref_ex(
+    struct IContext *,
+    void *(*)(va_list),
+    void (*)(void *),
+    ...
 );
 
 #endif

@@ -1,3 +1,4 @@
+#include <stdarg.h>
 #include <stdlib.h>
 #include <stdio.h>
 #include <unistd.h>
@@ -82,13 +83,13 @@ struct TimeLoggerProps {
 void time_logger_renderer(struct IContext * ctx, void const * props) {
     struct TimeLoggerProps const * p = props;
 
-    struct IComponentRef str_state = context_use_ref(
+    struct IComponentRef * str_state = context_use_ref(
         ctx,
         (void *(*)(void))string_alloc,
         (void (*)(void *)) string_destroy
     );
 
-    struct String * str = str_state.value;
+    struct String * str = str_state->value;
 
     struct tm *local_time = localtime(&p->time);
     static char time_str[20];
@@ -108,10 +109,10 @@ static struct IComponent * time_logger = NULL;
 
 //------------------------------------------------------------------------------
 
-time_t * current_time_alloc(void) {
-    time_t * now = (time_t *) malloc(sizeof(time_t));
-    *now = time(NULL);
-    return now;
+time_t * current_time_alloc(va_list args) {
+    time_t * t = (time_t *) malloc(sizeof(time_t));
+    *t = va_arg(args, time_t);
+    return t;
 };
 
 void current_time_destroy(time_t *now) {
@@ -121,22 +122,33 @@ void current_time_destroy(time_t *now) {
 void app_renderer(struct IContext * ctx, void const *props) {
     (void) props;
 
-    struct IComponentRef start_time_state = context_use_ref(
-        ctx,
-        (void *(*)(void)) current_time_alloc,
-        (void(*)(void *)) current_time_destroy
-    );
-    time_t * start_time = (time_t *) start_time_state.value;
-
     time_t now = time(NULL);
+    struct IComponentRef * start_time_state = context_use_ref_ex(
+        ctx,
+        (void *(*)(va_list)) current_time_alloc,
+        (void(*)(void *)) current_time_destroy,
+        now
+    );
+    time_t * start_time = (time_t *) start_time_state->value;
+
+    struct XREStateInt * cycle_cnt_state = xre_use_int(ctx, 0);
+
     int difftime_sec = (int) difftime(now, *start_time);
 
-    if (difftime_sec > 5) {
+    if (difftime_sec >= 5) {
         *start_time = now;
+        int cycle_cnt = xre_state_get_int(cycle_cnt_state);
+        xre_state_set_int(cycle_cnt_state, cycle_cnt+1);
     }
 
     char message[100] = "";
-    snprintf(message, sizeof(message) - 1, "Elapsed seconds: %d", difftime_sec);
+    snprintf(
+        message,
+        sizeof(message) - 1,
+        "Elapsed seconds: %d. Cycles: %d",
+        difftime_sec,
+        xre_state_get_int(cycle_cnt_state)
+    );
 
     context_use(ctx, time_logger, &(struct TimeLoggerProps){.time=*start_time, .header="Initial time"});
     context_use(ctx, time_logger, &(struct TimeLoggerProps){.time=now, .header="Current time"});
