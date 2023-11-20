@@ -1,11 +1,23 @@
-#include "./use_value.h"
-#include "./context.h"
-#include "./base.h"
+#ifndef XRE_USE_VALUE_USE_X_FACTORY_H
+#define XRE_USE_VALUE_USE_X_FACTORY_H
+
+
+#include "../context.h"
+#include "../base.h"
+#include <stdarg.h>
 
 
 struct XREState {
     struct IComponentRef base;
 };
+
+
+#define XRE_USE_X_FACTORY_H(type, struct_type, name) \
+struct struct_type; \
+ \
+struct struct_type * xre_use_##name(struct IContext *, type); \
+type xre_state_get_##name(struct struct_type *); \
+void xre_state_set_##name(struct struct_type *, type);
 
 
 #define XRE_USE_X_FACTORY(type, struct_type, promoted_type, name) \
@@ -15,13 +27,13 @@ struct struct_type { \
 }; \
  \
  \
-void * name##_alloc(va_list args) { \
+static void * name##_alloc(va_list args) { \
     type * value = XRE_ALLOC(type, 1); \
     *value = (type) va_arg(args, promoted_type); \
     return value; \
 }; \
  \
-void name##_destroy(void *value) { \
+static void name##_destroy(void *value) { \
     XRE_FREE(value); \
 }; \
 \
@@ -48,7 +60,4 @@ inline void xre_state_set_##name(struct struct_type *state, type value) { \
 };
 
 
-XRE_USE_X_FACTORY(char, XREStateChar, int, char)
-XRE_USE_X_FACTORY(int, XREStateInt, int, int)
-XRE_USE_X_FACTORY(double, XREStateDouble, double, double)
-XRE_USE_X_FACTORY(float, XREStateFloat, double, float)
+#endif
