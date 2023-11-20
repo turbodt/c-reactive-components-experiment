@@ -82,7 +82,7 @@ void time_logger(struct IContext * ctx, va_list props) {
     static char time_str[20];
     strftime(time_str, sizeof(time_str), "%Y-%m-%d %H:%M:%S", local_time);
 
-    context_use(ctx, text, "%s: %s\n", header, time_str);
+    xre_use(ctx, text, "%s: %s\n", header, time_str);
 }
 
 
@@ -102,7 +102,7 @@ void app(struct IContext * ctx, va_list props) {
     (void) props;
 
     time_t now = time(NULL);
-    struct IComponentRef * start_time_state = context_use_ref(
+    struct IComponentRef * start_time_state = xre_use_ref(
         ctx,
         (void *(*)(va_list)) current_time_alloc,
         (void(*)(void *)) current_time_destroy,
@@ -120,16 +120,16 @@ void app(struct IContext * ctx, va_list props) {
         xre_state_set_int(cycle_cnt_state, cycle_cnt+1);
     }
 
-    context_use(ctx, time_logger, *start_time, "Initial time");
-    context_use(ctx, time_logger, now, "Current time");
-    context_use(
+    xre_use(ctx, time_logger, *start_time, "Initial time");
+    xre_use(ctx, time_logger, now, "Current time");
+    xre_use(
         ctx,
         text,
         "Elapsed seconds: %d. Cycles: %d\n",
         difftime_sec,
         xre_state_get_int(cycle_cnt_state)
     );
-    context_use(ctx, text, "Press 'q' to stop\n");
+    xre_use(ctx, text, "Press 'q' to stop\n");
 };
 
 

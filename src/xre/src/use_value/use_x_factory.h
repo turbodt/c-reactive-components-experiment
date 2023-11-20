@@ -39,7 +39,7 @@ static void name##_destroy(void *value) { \
 \
 \
 struct struct_type * xre_use_##name(struct IContext * ctx, type initial_value) { \
-    struct IComponentRef * ref = context_use_ref( \
+    struct IComponentRef * ref = xre_use_ref( \
         ctx, \
         name##_alloc, \
         name##_destroy, \

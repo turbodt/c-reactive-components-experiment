@@ -83,11 +83,11 @@ void context_vrender_frame(
     pctx->children_index = 0;
     pctx->states_index = 0;
 
-    context_vuse(parent_context, component, props);
+    xre_vuse(parent_context, component, props);
 };
 
 
-struct IComponentRef * context_use_vref(
+struct IComponentRef * xre_use_vref(
     struct IContext *context,
     void *(*constructor)(va_list),
     void (*destructor)(void *),
@@ -119,7 +119,7 @@ struct IComponentRef * context_use_vref(
 
 
 
-struct IComponentRef * context_use_ref(
+struct IComponentRef * xre_use_ref(
     struct IContext *context,
     void *(*constructor)(va_list),
     void (*destructor)(void *),
@@ -127,7 +127,7 @@ struct IComponentRef * context_use_ref(
 ) {
     va_list constructor_args;
     va_start(constructor_args, destructor);
-    struct IComponentRef * ref = context_use_vref(
+    struct IComponentRef * ref = xre_use_vref(
         context,
         constructor,
         destructor,
@@ -139,7 +139,7 @@ struct IComponentRef * context_use_ref(
 };
 
 
-void context_vuse(
+void xre_vuse(
     struct IContext *parent_context,
     Component component,
     va_list props
@@ -167,14 +167,14 @@ void context_vuse(
 };
 
 
-void context_use(
+void xre_use(
     struct IContext *parent_context,
     Component component,
     ...
 ) {
     va_list props;
     va_start(props, component);
-    context_vuse(parent_context, component, props);
+    xre_vuse(parent_context, component, props);
     va_end(props);
 };
 
