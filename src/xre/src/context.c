@@ -13,7 +13,7 @@ struct ContextPrivate {
     size_t states_index;
     size_t states_size;
     struct IContextState **states;
-    struct IComponent * component;
+    Component component;
 };
 typedef struct ContextPrivate ContextPrivate;
 
@@ -22,7 +22,10 @@ typedef struct ContextPrivate ContextPrivate;
 #define TO_PUB(context) ((struct IContext *)(context))
 
 
-struct IContext * context_alloc(struct IComponent *component) {
+static void component_render(struct IContext *, Component, va_list);
+
+
+struct IContext * context_alloc(Component component) {
     ContextPrivate * ctx = XRE_ALLOC(ContextPrivate, 1);
 
     ctx->children_index = 0;
@@ -60,7 +63,7 @@ void context_destroy(struct IContext * context) {
 
 void context_render_frame(
     struct IContext *parent_context,
-    struct IComponent * component,
+    Component component,
     void const *props
 ) {
     ContextPrivate * pctx = TO_PRIV(parent_context);
@@ -126,7 +129,7 @@ struct IComponentRef * context_use_ref(
 
 void context_use_v(
     struct IContext *parent_context,
-    struct IComponent * component,
+    Component component,
     va_list props
 ) {
 
@@ -148,13 +151,13 @@ void context_use_v(
     ctx->children_index = 0;
     ctx->states_index = 0;
 
-    component_render(component, TO_PUB(ctx), props);
+    component_render(TO_PUB(ctx), component, props);
 };
 
 
 void context_use(
     struct IContext *parent_context,
-    struct IComponent * component,
+    Component component,
     ...
 ) {
     va_list props;
@@ -166,3 +169,12 @@ void context_use(
 
 //--------------------------------------------------------------------------
 //
+
+
+inline void component_render(
+    struct IContext *ctx,
+    Component component,
+    va_list props
+) {
+  component(ctx, props);
+};

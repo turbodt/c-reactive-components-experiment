@@ -3,9 +3,9 @@
 
 
 #include "./context_state.h"
-#include "./component.h"
 #include <stdlib.h>
 #include <stdarg.h>
+
 
 
 struct IComponentRef {
@@ -16,14 +16,17 @@ struct IComponentRef {
 struct IContext;
 
 
-struct IContext * context_alloc(struct IComponent *);
+typedef void (*Component)(struct IContext *, va_list);
+
+
+struct IContext * context_alloc(Component);
 void context_destroy(struct IContext *);
 
 
-void context_render_frame(struct IContext *, struct IComponent *, void const *);
+void context_render_frame(struct IContext *, Component, void const *);
 
-void context_use(struct IContext *, struct IComponent *, ...);
-void context_use_v(struct IContext *, struct IComponent *, va_list);
+void context_use(struct IContext *, Component, ...);
+void context_use_v(struct IContext *, Component, va_list);
 
 
 struct IComponentRef * context_use_vref(

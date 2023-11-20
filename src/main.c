@@ -35,13 +35,11 @@ int kbhit(void) {
 }
 //------------------------------------------------------------------------------
 
-void text_renderer(struct IContext * ctx, va_list props) {
+void text(struct IContext * ctx, va_list props) {
     (void) ctx;
     char const * format = va_arg(props, char const *);
     vprintf(format, props);
 };
-
-static struct IComponent * text = NULL;
 
 //------------------------------------------------------------------------------
 
@@ -76,7 +74,7 @@ void string_set(struct String *dst, char const *src) {
 };
 
 
-void time_logger_renderer(struct IContext * ctx, va_list props) {
+void time_logger(struct IContext * ctx, va_list props) {
     time_t time = va_arg(props, time_t);
     char const * header = va_arg(props, char const *);
 
@@ -86,9 +84,6 @@ void time_logger_renderer(struct IContext * ctx, va_list props) {
 
     context_use(ctx, text, "%s: %s\n", header, time_str);
 }
-
-
-static struct IComponent * time_logger = NULL;
 
 
 //------------------------------------------------------------------------------
@@ -103,7 +98,7 @@ void current_time_destroy(time_t *now) {
     free(now);
 };
 
-void app_renderer(struct IContext * ctx, va_list props) {
+void app(struct IContext * ctx, va_list props) {
     (void) props;
 
     time_t now = time(NULL);
@@ -138,15 +133,9 @@ void app_renderer(struct IContext * ctx, va_list props) {
 };
 
 
-static struct IComponent * app = NULL;
-
 //------------------------------------------------------------------------------
 
 int main(void) {
-    text = component_alloc("TEXT", text_renderer);
-    time_logger = component_alloc("TIME_LOGGER", time_logger_renderer);
-    app = component_alloc("APP", app_renderer);
-
     struct IContext * context = context_alloc(NULL);
 
     while (!kbhit()) {
@@ -163,8 +152,4 @@ int main(void) {
     getchar();
 
     context_destroy(context);
-
-    component_destroy(app);
-    component_destroy(time_logger);
-    component_destroy(text);
 };
