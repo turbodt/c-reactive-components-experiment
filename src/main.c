@@ -129,7 +129,7 @@ void app(struct IContext * ctx, va_list props) {
         difftime_sec,
         xre_state_get_int(cycle_cnt_state)
     );
-    context_use(ctx, text, "Press any key to stop\n");
+    context_use(ctx, text, "Press 'q' to stop\n");
 };
 
 
@@ -138,9 +138,10 @@ void app(struct IContext * ctx, va_list props) {
 int main(void) {
     struct IContext * context = context_alloc(NULL);
 
-    while (!kbhit()) {
+    int exit = 0;
+    while (!exit) {
 
-        context_render_frame(context, app, NULL);
+        context_render_frame(context, app);
 
         usleep(16000);
 
@@ -148,8 +149,12 @@ int main(void) {
         printf("\033[A\033[K");
         printf("\033[A\033[K");
         printf("\033[A\033[K");
+
+        if (kbhit()) {
+            char c = getchar();
+            exit = c == 'q' || c == 'Q';
+        }
     }
-    getchar();
 
     context_destroy(context);
 };

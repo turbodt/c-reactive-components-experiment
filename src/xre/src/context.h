@@ -23,10 +23,11 @@ struct IContext * context_alloc(Component);
 void context_destroy(struct IContext *);
 
 
-void context_render_frame(struct IContext *, Component, void const *);
+void context_render_frame(struct IContext *, Component, ...);
+void context_vrender_frame(struct IContext *, Component, va_list);
 
 void context_use(struct IContext *, Component, ...);
-void context_use_v(struct IContext *, Component, va_list);
+void context_vuse(struct IContext *, Component, va_list);
 
 
 struct IComponentRef * context_use_vref(

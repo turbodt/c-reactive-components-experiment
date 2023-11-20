@@ -64,14 +64,26 @@ void context_destroy(struct IContext * context) {
 void context_render_frame(
     struct IContext *parent_context,
     Component component,
-    void const *props
+    ...
+) {
+    va_list props;
+    va_start(props, component);
+    context_vrender_frame(parent_context, component, props);
+    va_end(props);
+};
+
+
+void context_vrender_frame(
+    struct IContext *parent_context,
+    Component component,
+    va_list props
 ) {
     ContextPrivate * pctx = TO_PRIV(parent_context);
 
     pctx->children_index = 0;
     pctx->states_index = 0;
 
-    context_use(parent_context, component, props);
+    context_vuse(parent_context, component, props);
 };
 
 
@@ -127,7 +139,7 @@ struct IComponentRef * context_use_ref(
 };
 
 
-void context_use_v(
+void context_vuse(
     struct IContext *parent_context,
     Component component,
     va_list props
@@ -162,7 +174,7 @@ void context_use(
 ) {
     va_list props;
     va_start(props, component);
-    context_use_v(parent_context, component, props);
+    context_vuse(parent_context, component, props);
     va_end(props);
 };
 
