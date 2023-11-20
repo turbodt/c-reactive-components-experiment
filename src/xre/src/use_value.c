@@ -8,10 +8,6 @@ struct XREState {
 };
 
 
-#define REF_TO_STATE(ref, type) ((type *)(ref))
-#define GET_REF_VALUE_PTR(state, type) (type *)((state)->base.base.value)
-
-
 #define XRE_USE_X_FACTORY(type, struct_type, promoted_type, name) \
 \
 struct struct_type { \
@@ -37,17 +33,17 @@ struct struct_type * xre_use_##name(struct IContext * ctx, type initial_value) {
         name##_destroy, \
         initial_value \
     ); \
-    return REF_TO_STATE(ref, struct struct_type); \
+    return (struct struct_type *) ref; \
 }; \
  \
  \
 inline type xre_state_get_##name(struct struct_type *state) { \
-    return *GET_REF_VALUE_PTR(state, type); \
+    return *((type *) state->base.base.value); \
 }; \
  \
  \
 inline void xre_state_set_##name(struct struct_type *state, type value) { \
-    type * ptr = GET_REF_VALUE_PTR(state, type); \
+    type * ptr = (type *) state->base.base.value; \
     *ptr = value; \
 };
 
