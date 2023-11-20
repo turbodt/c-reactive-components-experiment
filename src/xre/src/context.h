@@ -22,14 +22,8 @@ void context_destroy(struct IContext *);
 
 void context_render_frame(struct IContext *, struct IComponent *, void const *);
 
-void context_use(struct IContext *, struct IComponent *, void const *);
-
-
-struct IComponentRef * context_use_ref(
-    struct IContext *,
-    void *(*)(void),
-    void (*)(void *)
-);
+void context_use(struct IContext *, struct IComponent *, ...);
+void context_use_v(struct IContext *, struct IComponent *, va_list);
 
 
 struct IComponentRef * context_use_vref(
@@ -40,7 +34,7 @@ struct IComponentRef * context_use_vref(
 );
 
 
-struct IComponentRef * context_use_ref_ex(
+struct IComponentRef * context_use_ref(
     struct IContext *,
     void *(*)(va_list),
     void (*)(void *),

@@ -19,12 +19,19 @@ struct struct_type { \
 }; \
  \
  \
-static void * name##_alloc(va_list); \
-static void name##_destroy(void *); \
+void * name##_alloc(va_list args) { \
+    type * value = XRE_ALLOC(type, 1); \
+    *value = (type) va_arg(args, promoted_type); \
+    return value; \
+}; \
+ \
+void name##_destroy(void *value) { \
+    XRE_FREE(value); \
+}; \
 \
 \
 struct struct_type * xre_use_##name(struct IContext * ctx, type initial_value) { \
-    struct IComponentRef * ref = context_use_ref_ex( \
+    struct IComponentRef * ref = context_use_ref( \
         ctx, \
         name##_alloc, \
         name##_destroy, \
@@ -42,17 +49,6 @@ inline type xre_state_get_##name(struct struct_type *state) { \
 inline void xre_state_set_##name(struct struct_type *state, type value) { \
     type * ptr = GET_REF_VALUE_PTR(state, type); \
     *ptr = value; \
-}; \
- \
- \
-void * name##_alloc(va_list args) { \
-    type * value = XRE_ALLOC(type, 1); \
-    *value = (type) va_arg(args, promoted_type); \
-    return value; \
-}; \
- \
-void name##_destroy(void *value) { \
-    XRE_FREE(value); \
 };
 
 

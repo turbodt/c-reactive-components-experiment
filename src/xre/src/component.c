@@ -1,12 +1,13 @@
 #include "./component.h"
 #include "./base.h"
+#include <stdarg.h>
 
 
 struct IComponent {};
 struct ComponentPrivate {
     struct IComponent base;
     char const * type;
-    void(*renderer)(struct IContext *, void const *);
+    void(*renderer)(struct IContext *, va_list);
 };
 typedef struct ComponentPrivate ComponentPrivate;
 
@@ -42,7 +43,7 @@ inline char const * component_get_type(struct IComponent * component) {
 void component_render(
     struct IComponent *component,
     struct IContext *context,
-    void const *props
+    va_list props
 ) {
     ComponentPrivate * cmp = TO_PRIV(component);
     cmp->renderer(context, props);

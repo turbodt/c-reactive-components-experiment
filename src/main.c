@@ -35,10 +35,10 @@ int kbhit(void) {
 }
 //------------------------------------------------------------------------------
 
-void text_renderer(struct IContext * ctx, void const * props) {
+void text_renderer(struct IContext * ctx, va_list props) {
     (void) ctx;
-    char const * text = props;
-    printf("%s\n", text);
+    char const * format = va_arg(props, char const *);
+    vprintf(format, props);
 };
 
 static struct IComponent * text = NULL;
@@ -75,32 +75,16 @@ void string_set(struct String *dst, char const *src) {
     snprintf(dst->value, dst->size -1, "%s", src);
 };
 
-struct TimeLoggerProps {
-    time_t time;
-    char const * header;
-};
 
-void time_logger_renderer(struct IContext * ctx, void const * props) {
-    struct TimeLoggerProps const * p = props;
+void time_logger_renderer(struct IContext * ctx, va_list props) {
+    time_t time = va_arg(props, time_t);
+    char const * header = va_arg(props, char const *);
 
-    struct IComponentRef * str_state = context_use_ref(
-        ctx,
-        (void *(*)(void))string_alloc,
-        (void (*)(void *)) string_destroy
-    );
-
-    struct String * str = str_state->value;
-
-    struct tm *local_time = localtime(&p->time);
+    struct tm *local_time = localtime(&time);
     static char time_str[20];
     strftime(time_str, sizeof(time_str), "%Y-%m-%d %H:%M:%S", local_time);
 
-    static char message[100] = "";
-    snprintf(message, sizeof(message) - 1, "%s: %s", p->header, time_str);
-
-    string_set(str, message);
-
-    context_use(ctx, text, message);
+    context_use(ctx, text, "%s: %s\n", header, time_str);
 }
 
 
@@ -119,11 +103,11 @@ void current_time_destroy(time_t *now) {
     free(now);
 };
 
-void app_renderer(struct IContext * ctx, void const *props) {
+void app_renderer(struct IContext * ctx, va_list props) {
     (void) props;
 
     time_t now = time(NULL);
-    struct IComponentRef * start_time_state = context_use_ref_ex(
+    struct IComponentRef * start_time_state = context_use_ref(
         ctx,
         (void *(*)(va_list)) current_time_alloc,
         (void(*)(void *)) current_time_destroy,
@@ -141,19 +125,16 @@ void app_renderer(struct IContext * ctx, void const *props) {
         xre_state_set_int(cycle_cnt_state, cycle_cnt+1);
     }
 
-    char message[100] = "";
-    snprintf(
-        message,
-        sizeof(message) - 1,
-        "Elapsed seconds: %d. Cycles: %d",
+    context_use(ctx, time_logger, *start_time, "Initial time");
+    context_use(ctx, time_logger, now, "Current time");
+    context_use(
+        ctx,
+        text,
+        "Elapsed seconds: %d. Cycles: %d\n",
         difftime_sec,
         xre_state_get_int(cycle_cnt_state)
     );
-
-    context_use(ctx, time_logger, &(struct TimeLoggerProps){.time=*start_time, .header="Initial time"});
-    context_use(ctx, time_logger, &(struct TimeLoggerProps){.time=now, .header="Current time"});
-    context_use(ctx, text, message);
-    context_use(ctx, text, "Press any key to stop");
+    context_use(ctx, text, "Press any key to stop\n");
 };
 
 

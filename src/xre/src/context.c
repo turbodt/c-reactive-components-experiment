@@ -72,33 +72,6 @@ void context_render_frame(
 };
 
 
-struct IComponentRef * context_use_ref(
-    struct IContext *context,
-    void *(*constructor)(void),
-    void (*destructor)(void *)
-) {
-    ContextPrivate * ctx = TO_PRIV(context);
-
-    size_t index = ctx->states_index;
-    ctx->states_index++;
-
-    if (index >= ctx->states_size) {
-        ctx->states = (struct IContextState **) realloc(
-            ctx->states,
-            (ctx->states_size + 1) * sizeof(struct IContext *)
-        );
-        ctx->states_size++;
-
-        ctx->states[index] = context_state_alloc(constructor(), destructor);
-    }
-
-    struct IContextState * state = ctx->states[index];
-
-    // TODO: This is unsafe. Fix it.
-    return (struct IComponentRef *) state;
-};
-
-
 struct IComponentRef * context_use_vref(
     struct IContext *context,
     void *(*constructor)(va_list),
@@ -131,7 +104,7 @@ struct IComponentRef * context_use_vref(
 
 
 
-struct IComponentRef * context_use_ref_ex(
+struct IComponentRef * context_use_ref(
     struct IContext *context,
     void *(*constructor)(va_list),
     void (*destructor)(void *),
@@ -151,10 +124,10 @@ struct IComponentRef * context_use_ref_ex(
 };
 
 
-void context_use(
+void context_use_v(
     struct IContext *parent_context,
     struct IComponent * component,
-    void const *props
+    va_list props
 ) {
 
     ContextPrivate * pctx = TO_PRIV(parent_context);
@@ -176,6 +149,18 @@ void context_use(
     ctx->states_index = 0;
 
     component_render(component, TO_PUB(ctx), props);
+};
+
+
+void context_use(
+    struct IContext *parent_context,
+    struct IComponent * component,
+    ...
+) {
+    va_list props;
+    va_start(props, component);
+    context_use_v(parent_context, component, props);
+    va_end(props);
 };
 
 
