@@ -88,6 +88,29 @@ void time_logger(struct IContext * ctx, va_list props) {
 
 //------------------------------------------------------------------------------
 
+
+void last_key_pressed(struct IContext *ctx, va_list props) {
+    (void) props;
+
+    struct XREStateChar * last_pressed = xre_use_char(ctx, '\0');
+
+    if (kbhit()) {
+        char c = getchar();
+        xre_state_set_char(last_pressed, c);
+    }
+
+    char c = xre_state_get_char(last_pressed);
+
+    if (c == '\0') {
+        xre_use(ctx, text, "No key pressed yet.\n");
+    } else {
+        xre_use(ctx, text, "Last key pressed is '%c' ('%d').\n", c, (int)c);
+    }
+}
+
+
+//------------------------------------------------------------------------------
+
 time_t * current_time_alloc(va_list args) {
     time_t * t = (time_t *) malloc(sizeof(time_t));
     *t = va_arg(args, time_t);
@@ -129,7 +152,8 @@ void app(struct IContext * ctx, va_list props) {
         difftime_sec,
         xre_state_get_int(cycle_cnt_state)
     );
-    xre_use(ctx, text, "Press 'q' to stop\n");
+    xre_use(ctx, last_key_pressed);
+    xre_use(ctx, text, "Press <ESC> to stop\n");
 };
 
 
@@ -149,10 +173,12 @@ int main(void) {
         printf("\033[A\033[K");
         printf("\033[A\033[K");
         printf("\033[A\033[K");
+        printf("\033[A\033[K");
 
         if (kbhit()) {
             char c = getchar();
-            exit = c == 'q' || c == 'Q';
+            exit = c == 27;
+            ungetc(c, stdin);
         }
     }
 
