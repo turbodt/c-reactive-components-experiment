@@ -135,12 +135,12 @@ void last_key_pressed(struct IContext *ctx, va_list props) {
 
 //------------------------------------------------------------------------------
 
-void fps(struct IContext * ctx, va_list props) {
-    (void) props;
 
+struct XREStateDouble * use_fps(struct IContext * ctx) {
     struct timespec now;
     clock_gettime(CLOCK_MONOTONIC, &now);
 
+    struct XREStateDouble * fps_state = xre_use_double(ctx, 0.0);
     struct StateTimeSpec * last_time_state = xre_use_timespec(ctx, now);
     struct timespec last_time = xre_state_get_timespec(last_time_state);
 
@@ -148,14 +148,29 @@ void fps(struct IContext * ctx, va_list props) {
     long ndiff = ((seconds * 1000000000L) + now.tv_nsec) - last_time.tv_nsec;
 
     if (ndiff < 100) {
-        xre_use(ctx, text, "Elapsed time: %ldns\n", ndiff);
-        return;
+        xre_state_set_double(fps_state, -1);
+    } else {
+        xre_state_set_double(fps_state, 1000000000.0/ndiff);
+
     }
 
-    double fps = 1000000000.0/ndiff;
     xre_state_set_timespec(last_time_state, now);
 
-    xre_use(ctx, text, "FPS: %f\n", fps);
+    return fps_state;
+};
+
+
+void print_fps(struct IContext * ctx, va_list props) {
+    (void) props;
+
+    struct XREStateDouble * fps_state = use_fps(ctx);
+    double fps = xre_state_get_double(fps_state);
+
+    if (fps < 0) {
+        xre_use(ctx, text, "FPS: --\n");
+    } else {
+        xre_use(ctx, text, "FPS: %d\n", (int)fps);
+    }
 };
 
 //------------------------------------------------------------------------------
@@ -180,7 +195,7 @@ void app(struct IContext * ctx, va_list props) {
         xre_state_set_int(cycle_cnt_state, cycle_cnt+1);
     }
 
-    xre_use(ctx, fps);
+    xre_use(ctx, print_fps);
     xre_use(ctx, time_logger, start_time, "Initial time");
     xre_use(ctx, time_logger, now, "Current time");
     xre_use(
