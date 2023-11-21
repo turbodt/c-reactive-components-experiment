@@ -22,7 +22,7 @@ CFLAGS = -Wall -Wextra -fPIC -g $(EXTERNAL_INCLUDES) $(LOCAL_INCLUDES)
 
 LDFLAGS = $(LOCAL_LIBRARIES) $(EXTERNAL_LIBRARIES)
 
-SRC = $(SRC_DIR)/main.c
+SRC = $(SRC_DIR)/main.c $(SRC_DIR)/use_time.c $(SRC_DIR)/use_timespec.c
 
 OBJ_DIR = $(PWD)/build
 OBJ = $(patsubst $(SRC_DIR)/%.c, $(OBJ_DIR)/%.o, $(SRC))

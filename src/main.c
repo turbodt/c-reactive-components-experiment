@@ -6,7 +6,10 @@
 #include <fcntl.h>
 #include <time.h>
 #include <string.h>
+#include <errno.h>
 #include "xre.h"
+#include "./use_time.h"
+#include "./use_timespec.h"
 
 
 int kbhit(void) {
@@ -32,6 +35,27 @@ int kbhit(void) {
     }
 
     return 0;
+}
+
+int msleep(long int msec)
+{
+    struct timespec ts;
+    int res;
+
+    if (msec < 0)
+    {
+        errno = EINVAL;
+        return -1;
+    }
+
+    ts.tv_sec = msec / 1000;
+    ts.tv_nsec = (msec % 1000) * 1000000;
+
+    do {
+        res = nanosleep(&ts, &ts);
+    } while (res && errno == EINTR);
+
+    return res;
 }
 //------------------------------------------------------------------------------
 
@@ -111,39 +135,53 @@ void last_key_pressed(struct IContext *ctx, va_list props) {
 
 //------------------------------------------------------------------------------
 
-time_t * current_time_alloc(va_list args) {
-    time_t * t = (time_t *) malloc(sizeof(time_t));
-    *t = va_arg(args, time_t);
-    return t;
+void fps(struct IContext * ctx, va_list props) {
+    (void) props;
+
+    struct timespec now;
+    clock_gettime(CLOCK_MONOTONIC, &now);
+
+    struct StateTimeSpec * last_time_state = xre_use_timespec(ctx, now);
+    struct timespec last_time = xre_state_get_timespec(last_time_state);
+
+    long seconds = now.tv_sec - last_time.tv_sec;
+    long ndiff = ((seconds * 1000000000L) + now.tv_nsec) - last_time.tv_nsec;
+
+    if (ndiff < 100) {
+        xre_use(ctx, text, "Elapsed time: %ldns\n", ndiff);
+        return;
+    }
+
+    double fps = 1000000000.0/ndiff;
+    xre_state_set_timespec(last_time_state, now);
+
+    xre_use(ctx, text, "FPS: %f\n", fps);
 };
 
-void current_time_destroy(time_t *now) {
-    free(now);
-};
+//------------------------------------------------------------------------------
 
 void app(struct IContext * ctx, va_list props) {
     (void) props;
 
     time_t now = time(NULL);
-    struct IComponentRef * start_time_state = xre_use_ref(
-        ctx,
-        (void *(*)(va_list)) current_time_alloc,
-        (void(*)(void *)) current_time_destroy,
-        now
-    );
-    time_t * start_time = (time_t *) start_time_state->value;
+    struct StateTime * start_time_state = xre_use_time(ctx, now);
+
+    time_t start_time = xre_state_get_time(start_time_state);
 
     struct XREStateInt * cycle_cnt_state = xre_use_int(ctx, 0);
 
-    int difftime_sec = (int) difftime(now, *start_time);
+    int difftime_sec = (int) difftime(now, start_time);
 
     if (difftime_sec >= 5) {
-        *start_time = now;
+        xre_state_set_time(start_time_state, now);
+        start_time = xre_state_get_time(start_time_state);
+
         int cycle_cnt = xre_state_get_int(cycle_cnt_state);
         xre_state_set_int(cycle_cnt_state, cycle_cnt+1);
     }
 
-    xre_use(ctx, time_logger, *start_time, "Initial time");
+    xre_use(ctx, fps);
+    xre_use(ctx, time_logger, start_time, "Initial time");
     xre_use(ctx, time_logger, now, "Current time");
     xre_use(
         ctx,
@@ -162,23 +200,41 @@ void app(struct IContext * ctx, va_list props) {
 int main(void) {
     struct IContext * context = context_alloc(NULL);
 
+    double const SPF = 0.016;
+
+    time_t sleep_start = 0.0;
+    time_t sleep_end = 0.0;
     int exit = 0;
     while (!exit) {
+        printf("Last sleep time: %f\n", difftime(sleep_end, sleep_start));
 
+        time_t render_start = time(NULL);
         context_render_frame(context, app);
+        time_t render_end = time(NULL);
 
-        usleep(16000);
+        double elapsed_time = difftime(render_end, render_start);
 
-        printf("\033[A\033[K");
-        printf("\033[A\033[K");
-        printf("\033[A\033[K");
-        printf("\033[A\033[K");
-        printf("\033[A\033[K");
+        sleep_start = time(NULL);
+        if (elapsed_time < SPF) {
+            msleep((long int)(1000 * (SPF - elapsed_time)));
+            //sleep(1);
+        }
+        sleep_end = time(NULL);
 
         if (kbhit()) {
             char c = getchar();
             exit = c == 27;
             ungetc(c, stdin);
+        }
+
+        if (!exit) {
+            printf("\033[A\033[K");
+            printf("\033[A\033[K");
+            printf("\033[A\033[K");
+            printf("\033[A\033[K");
+            printf("\033[A\033[K");
+            printf("\033[A\033[K");
+            printf("\033[A\033[K");
         }
     }
 
