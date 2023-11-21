@@ -59,10 +59,17 @@ int msleep(long int msec)
 }
 //------------------------------------------------------------------------------
 
-void text(struct IContext * ctx, va_list props) {
+void vtext(struct IContext * ctx, va_list props) {
     (void) ctx;
     char const * format = va_arg(props, char const *);
     vprintf(format, props);
+};
+
+void use_text(struct IContext * ctx, ...) {
+    va_list props;
+    va_start(props, ctx);
+    vtext(ctx, props);
+    va_end(props);
 };
 
 //------------------------------------------------------------------------------
@@ -106,7 +113,7 @@ void time_logger(struct IContext * ctx, va_list props) {
     static char time_str[20];
     strftime(time_str, sizeof(time_str), "%Y-%m-%d %H:%M:%S", local_time);
 
-    xre_use(ctx, text, "%s: %s\n", header, time_str);
+    use_text(ctx, "%s: %s\n", header, time_str);
 }
 
 
@@ -126,9 +133,9 @@ void last_key_pressed(struct IContext *ctx, va_list props) {
     char c = xre_state_get_char(last_pressed);
 
     if (c == '\0') {
-        xre_use(ctx, text, "No key pressed yet.\n");
+        use_text(ctx, "No key pressed yet.\n");
     } else {
-        xre_use(ctx, text, "Last key pressed is '%c' ('%d').\n", c, (int)c);
+        use_text(ctx, "Last key pressed is '%c' ('%d').\n", c, (int)c);
     }
 }
 
@@ -167,9 +174,9 @@ void print_fps(struct IContext * ctx, va_list props) {
     double fps = xre_state_get_double(fps_state);
 
     if (fps < 0) {
-        xre_use(ctx, text, "FPS: --\n");
+        use_text(ctx, "FPS: --\n");
     } else {
-        xre_use(ctx, text, "FPS: %d\n", (int)fps);
+        use_text(ctx, "FPS: %d\n", (int)fps);
     }
 };
 
@@ -198,15 +205,14 @@ void app(struct IContext * ctx, va_list props) {
     xre_use(ctx, print_fps);
     xre_use(ctx, time_logger, start_time, "Initial time");
     xre_use(ctx, time_logger, now, "Current time");
-    xre_use(
+    use_text(
         ctx,
-        text,
         "Elapsed seconds: %d. Cycles: %d\n",
         difftime_sec,
         xre_state_get_int(cycle_cnt_state)
     );
     xre_use(ctx, last_key_pressed);
-    xre_use(ctx, text, "Press <ESC> to stop\n");
+    use_text(ctx, "Press <ESC> to stop\n");
 };
 
 
