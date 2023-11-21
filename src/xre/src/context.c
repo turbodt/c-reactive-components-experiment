@@ -1,25 +1,6 @@
-#include "./context.h"
+#include "./context_protected.h"
 #include "./base.h"
 #include <stdarg.h>
-
-
-struct IContext {};
-struct ContextPrivate {
-    struct IContext base;
-    size_t children_index;
-    size_t children_size;
-    struct IContext **children;
-
-    size_t states_index;
-    size_t states_size;
-    struct IContextState **states;
-    Component component;
-};
-typedef struct ContextPrivate ContextPrivate;
-
-
-#define TO_PRIV(context) ((ContextPrivate *)(context))
-#define TO_PUB(context) ((struct IContext *)(context))
 
 
 static void component_render(struct IContext *, Component, va_list);
@@ -42,10 +23,10 @@ struct IContext * context_alloc(Component component) {
 
 
 void context_destroy(struct IContext * context) {
-    ContextPrivate * ctx = TO_PRIV(context);
+    ContextPrivate * ctx = TO_CONTEXT_PRIV(context);
 
     for (size_t index = 0; index < ctx->children_size; index++) {
-        struct IContext * child = TO_PUB(ctx->children[index]);
+        struct IContext * child = TO_CONTEXT_PUB(ctx->children[index]);
         context_destroy(child);
         ctx->children[index] = NULL;
     }
@@ -78,64 +59,12 @@ void context_vrender_frame(
     Component component,
     va_list props
 ) {
-    ContextPrivate * pctx = TO_PRIV(parent_context);
+    ContextPrivate * pctx = TO_CONTEXT_PRIV(parent_context);
 
     pctx->children_index = 0;
     pctx->states_index = 0;
 
     xre_vuse(parent_context, component, props);
-};
-
-
-struct IComponentRef * xre_use_vref(
-    struct IContext *context,
-    void *(*constructor)(va_list),
-    void (*destructor)(void *),
-    va_list constructor_args
-) {
-    ContextPrivate * ctx = TO_PRIV(context);
-
-    size_t index = ctx->states_index;
-    ctx->states_index++;
-
-    if (index >= ctx->states_size) {
-        ctx->states = (struct IContextState **) realloc(
-            ctx->states,
-            (ctx->states_size + 1) * sizeof(struct IContext *)
-        );
-        ctx->states_size++;
-
-        ctx->states[index] = context_state_alloc(
-            constructor(constructor_args),
-            destructor
-        );
-    }
-
-    struct IContextState * state = ctx->states[index];
-
-    // TODO: This is unsafe. Fix it.
-    return (struct IComponentRef *) state;
-};
-
-
-
-struct IComponentRef * xre_use_ref(
-    struct IContext *context,
-    void *(*constructor)(va_list),
-    void (*destructor)(void *),
-    ...
-) {
-    va_list constructor_args;
-    va_start(constructor_args, destructor);
-    struct IComponentRef * ref = xre_use_vref(
-        context,
-        constructor,
-        destructor,
-        constructor_args
-    );
-    va_end(constructor_args);
-
-    return ref;
 };
 
 
@@ -145,7 +74,7 @@ void xre_vuse(
     va_list props
 ) {
 
-    ContextPrivate * pctx = TO_PRIV(parent_context);
+    ContextPrivate * pctx = TO_CONTEXT_PRIV(parent_context);
 
     size_t index = pctx->children_index;
     pctx->children_index++;
@@ -159,11 +88,11 @@ void xre_vuse(
 
         pctx->children[index] = context_alloc(component);
     }
-    ContextPrivate * ctx = TO_PRIV(pctx->children[index]);
+    ContextPrivate * ctx = TO_CONTEXT_PRIV(pctx->children[index]);
     ctx->children_index = 0;
     ctx->states_index = 0;
 
-    component_render(TO_PUB(ctx), component, props);
+    component_render(TO_CONTEXT_PUB(ctx), component, props);
 };
 
 
@@ -188,5 +117,5 @@ inline void component_render(
     Component component,
     va_list props
 ) {
-  component(ctx, props);
+    component(ctx, props);
 };

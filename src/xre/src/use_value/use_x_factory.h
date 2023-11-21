@@ -3,6 +3,7 @@
 
 
 #include "../context.h"
+#include "../use_ref.h"
 #include "../base.h"
 #include <stdarg.h>
 
@@ -20,7 +21,7 @@ type xre_state_get_##name(struct struct_type *); \
 void xre_state_set_##name(struct struct_type *, type);
 
 
-#define XRE_USE_X_FACTORY(type, struct_type, promoted_type, name) \
+#define XRE_USE_X_FACTORY_EX(type, struct_type, promoted_type, name, assign) \
 \
 struct struct_type { \
     struct XREState base; \
@@ -29,7 +30,8 @@ struct struct_type { \
  \
 static void * name##_alloc(va_list args) { \
     type * value = XRE_ALLOC(type, 1); \
-    *value = (type) va_arg(args, promoted_type); \
+    type new_value = (type) va_arg(args, promoted_type); \
+    assign(value, &new_value); \
     return value; \
 }; \
  \
@@ -57,7 +59,18 @@ inline type xre_state_get_##name(struct struct_type *state) { \
 inline void xre_state_set_##name(struct struct_type *state, type value) { \
     type * ptr = (type *) state->base.base.value; \
     *ptr = value; \
-};
+    assign(ptr, &value); \
+}
 
+
+#define XRE_USE_X_FACTORY(type, struct_type, promoted_type, name) \
+ \
+ \
+static inline void type##_assign(type * dst, type const * src) { \
+    *dst = *src; \
+} \
+ \
+ \
+  XRE_USE_X_FACTORY_EX(type, struct_type, promoted_type, name, type##_assign)
 
 #endif

@@ -30,19 +30,4 @@ void xre_use(struct IContext *, Component, ...);
 void xre_vuse(struct IContext *, Component, va_list);
 
 
-struct IComponentRef * xre_use_vref(
-    struct IContext *,
-    void *(*)(va_list),
-    void (*)(void *),
-    va_list
-);
-
-
-struct IComponentRef * xre_use_ref(
-    struct IContext *,
-    void *(*)(va_list),
-    void (*)(void *),
-    ...
-);
-
 #endif
