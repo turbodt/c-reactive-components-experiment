@@ -1,62 +1,14 @@
 #include <stdarg.h>
 #include <stdlib.h>
 #include <stdio.h>
-#include <unistd.h>
-#include <termios.h>
-#include <fcntl.h>
 #include <time.h>
 #include <string.h>
-#include <errno.h>
 #include "xre.h"
+#include "./kbhit.h"
+#include "./msleep.h"
 #include "./use_time.h"
 #include "./use_timespec.h"
 
-
-int kbhit(void) {
-    struct termios oldt, newt;
-    int ch;
-    int oldf;
-
-    tcgetattr(STDIN_FILENO, &oldt);
-    newt = oldt;
-    newt.c_lflag &= ~(ICANON | ECHO);
-    tcsetattr(STDIN_FILENO, TCSANOW, &newt);
-    oldf = fcntl(STDIN_FILENO, F_GETFL, 0);
-    fcntl(STDIN_FILENO, F_SETFL, oldf | O_NONBLOCK);
-
-    ch = getchar();
-
-    tcsetattr(STDIN_FILENO, TCSANOW, &oldt);
-    fcntl(STDIN_FILENO, F_SETFL, oldf);
-
-    if(ch != EOF) {
-        ungetc(ch, stdin);
-        return 1;
-    }
-
-    return 0;
-}
-
-int msleep(long int msec)
-{
-    struct timespec ts;
-    int res;
-
-    if (msec < 0)
-    {
-        errno = EINVAL;
-        return -1;
-    }
-
-    ts.tv_sec = msec / 1000;
-    ts.tv_nsec = (msec % 1000) * 1000000;
-
-    do {
-        res = nanosleep(&ts, &ts);
-    } while (res && errno == EINTR);
-
-    return res;
-}
 //------------------------------------------------------------------------------
 
 void vtext(struct IContext * ctx, va_list props) {
@@ -125,9 +77,9 @@ void last_key_pressed(struct IContext *ctx, va_list props) {
 
     struct XREStateChar * last_pressed = xre_use_char(ctx, '\0');
 
-    if (kbhit()) {
-        char c = getchar();
-        xre_state_set_char(last_pressed, c);
+    char key_c = kbhit();
+    if (key_c != EOF) {
+        xre_state_set_char(last_pressed, key_c);
     }
 
     char c = xre_state_get_char(last_pressed);
@@ -219,6 +171,7 @@ void app(struct IContext * ctx, va_list props) {
 //------------------------------------------------------------------------------
 
 int main(void) {
+    kb_init();
     struct IContext * context = context_alloc(NULL);
 
     double const SPF = 0.016;
@@ -242,8 +195,8 @@ int main(void) {
         }
         sleep_end = time(NULL);
 
-        if (kbhit()) {
-            char c = getchar();
+        char c = kbhit();
+        if (c != EOF) {
             exit = c == 27;
             ungetc(c, stdin);
         }
@@ -260,4 +213,5 @@ int main(void) {
     }
 
     context_destroy(context);
+    kb_clean_up();
 };
