@@ -6,130 +6,152 @@
 #include "xre.h"
 #include "./kbhit.h"
 #include "./msleep.h"
+#include "./screen.h"
 #include "./use_time.h"
 #include "./use_timespec.h"
 
-//------------------------------------------------------------------------------
 
-void vtext(struct IContext * ctx, va_list props) {
-    (void) ctx;
-    char const * format = va_arg(props, char const *);
-    vprintf(format, props);
+struct Box {
+    int x;
+    int y;
+    size_t width;
+    size_t height;
 };
 
-void use_text(struct IContext * ctx, ...) {
+
+#define KEY_PRESS_DEBOUNCE_S 0.05
+
+
+static Screen * screen = NULL;
+
+
+//------------------------------------------------------------------------------
+
+
+void box_component(struct IContext * ctx, va_list props) {
+    (void) ctx;
+    struct Box const * box = va_arg(props, struct Box const *);
+    char bg = (char) va_arg(props, int);
+    char has_border = (char) va_arg(props, int);
+    ScreenCoordinates coords = {0,0};
+
+    for (int i = 0; i < (int) box->height; i++) {
+        for (int j = 0; j < (int) box->width; j++) {
+            coords.x = box->x + j;
+            coords.y = box->y + i;
+            screen_printf(screen, &coords, "%c", bg);
+        }
+    }
+
+    if (!has_border) {
+        return;
+    }
+
+    for (int j = 0; j < (int) box->width; j++) {
+        coords.x = box->x + j;
+        coords.y = box->y - 1;
+        screen_printf(screen, &coords, "-");
+        coords.y = box->y + (int) box->height;
+        screen_printf(screen, &coords, "-");
+    }
+
+    for (int i = 0; i < (int) box->height; i++) {
+        coords.x = box->x -1;
+        coords.y = box->y +i;
+        screen_printf(screen, &coords, "|");
+        coords.x = box->x + (int) box->width;
+        screen_printf(screen, &coords, "|");
+    }
+
+    coords.x = box->x - 1;
+    coords.y = box->y - 1;
+    screen_printf(screen, &coords, ".");
+
+    coords.x = box->x - 1;
+    coords.y = box->y + (int) box->height;
+    screen_printf(screen, &coords, "'");
+
+    coords.x = box->x + (int) box->width;
+    coords.y = box->y - 1;
+    screen_printf(screen, &coords, ".");
+
+    coords.x = box->x + (int) box->width;
+    coords.y = box->y + (int) box->height;
+    screen_printf(screen, &coords, "'");
+};
+
+void use_box(struct IContext * ctx, ...) {
     va_list props;
     va_start(props, ctx);
-    vtext(ctx, props);
+    box_component(ctx, props);
     va_end(props);
 };
 
-//------------------------------------------------------------------------------
-
-struct String {
-    size_t size;
-    char *value;
-};
-
-struct String * string_alloc(void) {
-    struct String * str = (struct String *) malloc(sizeof(struct String));
-    str->value = NULL;
-    str->size = 0;
-    return str;
-};
-
-void string_destroy(struct String * str) {
-    if (str->value != NULL) {
-        free(str->value);
-        str->value = NULL;
-    }
-    str->size = 0;
-    free(str);
-}
-
-void string_set(struct String *dst, char const *src) {
-    size_t src_size = strlen(src) + 1;
-    if (dst->size < src_size || dst->size > 2 * src_size) {
-        dst->value = (char *) realloc(dst->value, src_size * sizeof(char));
-        dst->size = src_size;
-    }
-    snprintf(dst->value, dst->size -1, "%s", src);
-};
-
-
-void time_logger(struct IContext * ctx, va_list props) {
-    time_t time = va_arg(props, time_t);
-    char const * header = va_arg(props, char const *);
-
-    struct tm *local_time = localtime(&time);
-    static char time_str[20];
-    strftime(time_str, sizeof(time_str), "%Y-%m-%d %H:%M:%S", local_time);
-
-    use_text(ctx, "%s: %s\n", header, time_str);
-}
-
 
 //------------------------------------------------------------------------------
 
 
-void last_key_pressed(struct IContext *ctx, va_list props) {
-    (void) props;
-
-    struct XREStateChar * last_pressed = xre_use_char(ctx, '\0');
-
-    char key_c = kbhit();
-    if (key_c != EOF) {
-        xre_state_set_char(last_pressed, key_c);
-    }
-
-    char c = xre_state_get_char(last_pressed);
-
-    if (c == '\0') {
-        use_text(ctx, "No key pressed yet.\n");
-    } else {
-        use_text(ctx, "Last key pressed is '%c' ('%d').\n", c, (int)c);
-    }
-}
-
-
-//------------------------------------------------------------------------------
-
-
-struct XREStateDouble * use_fps(struct IContext * ctx) {
-    struct timespec now;
-    clock_gettime(CLOCK_MONOTONIC, &now);
-
-    struct XREStateDouble * fps_state = xre_use_double(ctx, 0.0);
-    struct StateTimeSpec * last_time_state = xre_use_timespec(ctx, now);
+char use_timer(struct IContext *ctx, double seconds) {
+    struct StateTimeSpec * last_time_state = xre_use_timespec(
+        ctx,
+        (struct timespec){0,0}
+    );
     struct timespec last_time = xre_state_get_timespec(last_time_state);
 
-    long seconds = now.tv_sec - last_time.tv_sec;
-    long ndiff = ((seconds * 1000000000L) + now.tv_nsec) - last_time.tv_nsec;
+    struct timespec now = {0, 0};
+    clock_gettime(CLOCK_MONOTONIC, &now);
 
-    if (ndiff < 100) {
-        xre_state_set_double(fps_state, -1);
-    } else {
-        xre_state_set_double(fps_state, 1000000000.0/ndiff);
+    long int sdiff = now.tv_sec - last_time.tv_sec;
+    long int ndiff = ((sdiff * 1000000000L) + now.tv_nsec) - last_time.tv_nsec;
 
-    }
+    if ((long int)(seconds * 1000000000L) > ndiff) {
+        return 0;
+    };
 
     xre_state_set_timespec(last_time_state, now);
+    return 1;
+}
 
-    return fps_state;
-};
+
+//------------------------------------------------------------------------------
 
 
-void print_fps(struct IContext * ctx, va_list props) {
-    (void) props;
+char use_pressed_key(struct IContext *ctx) {
+    struct XREStateChar * last_pressed_state = xre_use_char(ctx, EOF);
+    char debouce_time_has_passed = use_timer(ctx, KEY_PRESS_DEBOUNCE_S);
 
-    struct XREStateDouble * fps_state = use_fps(ctx);
-    double fps = xre_state_get_double(fps_state);
+    char last_pressed = xre_state_get_char(last_pressed_state);
+    char key_c = kbhit();
 
-    if (fps < 0) {
-        use_text(ctx, "FPS: --\n");
-    } else {
-        use_text(ctx, "FPS: %d\n", (int)fps);
+    if (last_pressed != EOF && !debouce_time_has_passed) {
+        return EOF;
     }
+
+    xre_state_set_char(last_pressed_state, key_c);
+
+    return xre_state_get_char(last_pressed_state);
+}
+
+//------------------------------------------------------------------------------
+
+
+double use_fps(struct IContext * ctx, double interval_s) {
+
+    char has_timer_passed = use_timer(ctx, interval_s);
+    struct XREStateInt * frame_count_state = xre_use_int(ctx, 0);
+    struct XREStateDouble * fps_state = xre_use_double(ctx, 0.0);
+
+    int frame_count = xre_state_get_int(frame_count_state);
+
+    if (has_timer_passed) {
+        xre_state_set_double(fps_state, (double) frame_count / interval_s);
+        xre_state_set_int(frame_count_state, 0);
+    } else {
+        frame_count++;
+        xre_state_set_int(frame_count_state, frame_count);
+    }
+
+    return xre_state_get_double(fps_state);
 };
 
 //------------------------------------------------------------------------------
@@ -137,34 +159,46 @@ void print_fps(struct IContext * ctx, va_list props) {
 void app(struct IContext * ctx, va_list props) {
     (void) props;
 
-    time_t now = time(NULL);
-    struct StateTime * start_time_state = xre_use_time(ctx, now);
+    static double const x_delta = 1.5;
+    static double const y_delta = 1.0;
 
-    time_t start_time = xre_state_get_time(start_time_state);
+    double fps = use_fps(ctx, 0.5);
+    char pressed_key = use_pressed_key(ctx);
 
-    struct XREStateInt * cycle_cnt_state = xre_use_int(ctx, 0);
+    struct XREStateDouble * pos_x_state = xre_use_double(ctx, 37.5);
+    double pos_x = xre_state_get_double(pos_x_state);
+    struct XREStateDouble * pos_y_state = xre_use_double(ctx, 4.0);
+    double pos_y = xre_state_get_double(pos_y_state);
 
-    int difftime_sec = (int) difftime(now, start_time);
+    struct Box box = {(int) pos_x, (int) pos_y, 4, 2};
+    ScreenSize const * screen_size = screen_get_size(screen);
 
-    if (difftime_sec >= 5) {
-        xre_state_set_time(start_time_state, now);
-        start_time = xre_state_get_time(start_time_state);
+    ScreenCoordinates text_coords = {0, 0};
 
-        int cycle_cnt = xre_state_get_int(cycle_cnt_state);
-        xre_state_set_int(cycle_cnt_state, cycle_cnt+1);
+    if (pressed_key == 'k' && box.y > 0) {
+        pos_y -= y_delta;
+        xre_state_set_double(pos_y_state, pos_y);
+    } else if (pressed_key == 'j' && box.y + box.height < screen_size->rows) {
+        pos_y += y_delta;
+        xre_state_set_double(pos_y_state, pos_y);
+    } else if (pressed_key == 'h' && box.x > 0) {
+        pos_x -= x_delta;
+        xre_state_set_double(pos_x_state, pos_x);
+    } else if (pressed_key == 'l' && box.x + box.width < screen_size->cols) {
+        pos_x += x_delta;
+        xre_state_set_double(pos_x_state, pos_x);
     }
 
-    xre_use(ctx, print_fps);
-    xre_use(ctx, time_logger, start_time, "Initial time");
-    xre_use(ctx, time_logger, now, "Current time");
-    use_text(
-        ctx,
-        "Elapsed seconds: %d. Cycles: %d\n",
-        difftime_sec,
-        xre_state_get_int(cycle_cnt_state)
-    );
-    xre_use(ctx, last_key_pressed);
-    use_text(ctx, "Press <ESC> to stop\n");
+    use_box(ctx, &box, 'X', 0);
+
+    text_coords.y = screen_size->rows -2;
+    screen_printf(screen, &text_coords, "Use h, j, k, l to move");
+
+    text_coords.y = screen_size->rows -1;
+    screen_printf(screen, &text_coords, "Press <ESC> to terminate.");
+
+    text_coords.y = 0;
+    screen_printf(screen, &text_coords, "FPS: %d", (int)fps);
 };
 
 
@@ -172,28 +206,26 @@ void app(struct IContext * ctx, va_list props) {
 
 int main(void) {
     kb_init();
+    screen = screen_alloc(stdout, &(ScreenSize){25, 80});
     struct IContext * context = context_alloc(NULL);
 
     double const SPF = 0.016;
 
-    time_t sleep_start = 0.0;
-    time_t sleep_end = 0.0;
     int exit = 0;
     while (!exit) {
-        printf("Last sleep time: %f\n", difftime(sleep_end, sleep_start));
 
         time_t render_start = time(NULL);
+
         context_render_frame(context, app);
+        screen_render(screen);
+
         time_t render_end = time(NULL);
 
         double elapsed_time = difftime(render_end, render_start);
 
-        sleep_start = time(NULL);
         if (elapsed_time < SPF) {
             msleep((long int)(1000 * (SPF - elapsed_time)));
-            //sleep(1);
         }
-        sleep_end = time(NULL);
 
         char c = kbhit();
         if (c != EOF) {
@@ -201,17 +233,10 @@ int main(void) {
             ungetc(c, stdin);
         }
 
-        if (!exit) {
-            printf("\033[A\033[K");
-            printf("\033[A\033[K");
-            printf("\033[A\033[K");
-            printf("\033[A\033[K");
-            printf("\033[A\033[K");
-            printf("\033[A\033[K");
-            printf("\033[A\033[K");
-        }
     }
 
     context_destroy(context);
+    screen_destroy(screen);
+    screen = NULL;
     kb_clean_up();
 };
