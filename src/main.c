@@ -232,8 +232,8 @@ int main(void) {
             exit = c == 27;
             ungetc(c, stdin);
         }
-
     }
+    screen_render_clear(screen);
 
     context_destroy(context);
     screen_destroy(screen);

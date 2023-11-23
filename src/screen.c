@@ -12,6 +12,10 @@
 #define MAX(a, b) ((a) < (b) ? (b) : (a))
 #define MIN(a, b) ((a) > (b) ? (b) : (a))
 
+#define BOOL char
+#define FALSE 0
+#define TRUE 1
+
 #define VAL_INDEX(size, i, j) ((i) * (size)->cols + (j))
 
 struct Screen {
@@ -19,6 +23,7 @@ struct Screen {
     ScreenSize size;
     char * next_values;
     char * last_values;
+    BOOL has_render;
 };
 
 
@@ -67,6 +72,8 @@ void screen_render(Screen *screen) {
     }
     screen_render_footer(screen);
 
+    screen->has_render = TRUE;
+
     screen_clear_last_values(screen);
 
     char * swap_value = screen->next_values;
@@ -76,6 +83,10 @@ void screen_render(Screen *screen) {
 
 
 void screen_render_clear(Screen * screen) {
+    if (!screen->has_render) {
+        return;
+    }
+
     ScreenSize const * size = screen_get_size(screen);
 
     remove_header();
@@ -83,6 +94,8 @@ void screen_render_clear(Screen * screen) {
         remove_last_line();
     }
     remove_header();
+
+    screen->has_render = FALSE;
 };
 
 
@@ -150,6 +163,7 @@ inline ScreenSize const * screen_get_size(Screen const *screen) {
 
 void screen_init(Screen * screen, FILE * out, ScreenSize const * size) {
     screen->out = out;
+    screen->has_render = FALSE;
 
     screen->size.rows = MIN(SCREEN_MAX_ROWS, size->rows);
     screen->size.cols = MIN(SCREEN_MAX_COLS, size->cols);
