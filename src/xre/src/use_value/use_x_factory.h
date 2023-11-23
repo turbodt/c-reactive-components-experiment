@@ -66,11 +66,11 @@ inline void xre_state_set_##name(struct struct_type *state, type value) { \
 #define XRE_USE_X_FACTORY(type, struct_type, promoted_type, name) \
  \
  \
-static inline void type##_assign(type * dst, type const * src) { \
+static inline void name##_assign(type * dst, type const * src) { \
     *dst = *src; \
 } \
  \
  \
-  XRE_USE_X_FACTORY_EX(type, struct_type, promoted_type, name, type##_assign)
+  XRE_USE_X_FACTORY_EX(type, struct_type, promoted_type, name, name##_assign)
 
 #endif
