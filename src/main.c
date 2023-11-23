@@ -122,6 +122,7 @@ char use_pressed_key(struct IContext *ctx) {
 
     char last_pressed = xre_state_get_char(last_pressed_state);
     char key_c = kbhit();
+    ungetc(key_c, stdin);
 
     if (last_pressed != EOF && !debouce_time_has_passed) {
         return EOF;
@@ -154,15 +155,16 @@ double use_fps(struct IContext * ctx, double interval_s) {
     return xre_state_get_double(fps_state);
 };
 
+
 //------------------------------------------------------------------------------
 
-void app(struct IContext * ctx, va_list props) {
+
+void box_screen_component(struct IContext * ctx, va_list props) {
     (void) props;
 
     static double const x_delta = 1.5;
     static double const y_delta = 1.0;
 
-    double fps = use_fps(ctx, 0.5);
     char pressed_key = use_pressed_key(ctx);
 
     struct XREStateDouble * pos_x_state = xre_use_double(ctx, 37.5);
@@ -193,21 +195,118 @@ void app(struct IContext * ctx, va_list props) {
 
     text_coords.y = screen_size->rows -2;
     screen_printf(screen, &text_coords, "Use h, j, k, l to move");
-
-    text_coords.y = screen_size->rows -1;
-    screen_printf(screen, &text_coords, "Press <ESC> to terminate.");
-
-    text_coords.y = 0;
-    screen_printf(screen, &text_coords, "FPS: %d", (int)fps);
 };
 
 
 //------------------------------------------------------------------------------
 
+
+void title_screen_component(struct IContext * ctx, va_list props) {
+    (void) props;
+    (void) ctx;
+
+    static char const text[] =
+        "This is a screen with some text in it\n"
+        "\n"
+        "         _______     ____  ____  ________  \n"
+        "        |_   __ \\   |_  _||_  _||_   __  | \n"
+        "          | |__) |    \\ \\  / /    | |_ \\_| \n"
+        "          |  __ /      > `' <     |  _| _  \n"
+        "         _| |  \\ \\_  _/ /'`\\ \\_  _| |__/ | \n"
+        "        |____| |___||____||____||________| \n"
+        "\n"
+        "and a title.\n"
+        "";
+
+    ScreenCoordinates text_coords = {4, 1};
+
+    for (char const * start_ptr = text; *start_ptr != '\0'; start_ptr++) {
+        size_t line_len = 0;
+        char const * end_ptr = start_ptr;
+
+        while (*end_ptr != '\0' && *end_ptr != '\n') {
+            end_ptr++;
+            line_len++;
+        };
+
+        char * line_str = (char *) malloc(sizeof(char) * (line_len + 1));
+
+        strncpy(line_str, start_ptr, line_len);
+
+        screen_printf(screen, &text_coords, "%s", line_str);
+
+        free(line_str);
+
+        start_ptr = end_ptr;
+
+        text_coords.y++;
+    }
+
+};
+
+
+//------------------------------------------------------------------------------
+
+
+XRE_USE_X_FACTORY_H(Component, StateComponent, component);
+XRE_USE_X_FACTORY(Component, StateComponent, Component, component);
+
+
+//------------------------------------------------------------------------------
+
+
+void app(struct IContext * ctx, va_list props) {
+    int * should_exit = va_arg(props, int *);
+
+    ScreenSize const * screen_size = screen_get_size(screen);
+    double fps = use_fps(ctx, 0.5);
+    ScreenCoordinates text_coords = {0, 0};
+    char pressed_key = use_pressed_key(ctx);
+
+    struct StateComponent * child_state = xre_use_component(
+        ctx,
+        title_screen_component
+    );
+    Component child = xre_state_get_component(child_state);
+
+    if (pressed_key == 27) {
+        *should_exit = 1;
+    } else if (pressed_key == 'n') {
+
+        if (child == box_screen_component) {
+            child = title_screen_component;
+        } else {
+            child = box_screen_component;
+        }
+
+        xre_state_set_component(child_state, child);
+    }
+
+    xre_use(ctx, child);
+
+    text_coords.x = 0;
+    text_coords.y = screen_size->rows -1;
+    screen_printf(screen, &text_coords, "Press <ESC> to terminate.");
+
+    text_coords.x = screen_size->cols - 34;
+    text_coords.y = screen_size->rows -1;
+    screen_printf(screen, &text_coords, "Press 'n' to switch among screens.");
+
+    text_coords.x = 0;
+    text_coords.y = 0;
+    screen_printf(screen, &text_coords, "FPS: %d", (int)fps);
+
+    kbhit();
+};
+
+
+//------------------------------------------------------------------------------
+
+
 int main(void) {
     kb_init();
     screen = screen_alloc(stdout, &(ScreenSize){25, 80});
-    struct IContext * context = context_alloc(NULL);
+    struct IContext * root_context = context_alloc(NULL);
 
     double const SPF = 0.016;
 
@@ -216,7 +315,7 @@ int main(void) {
 
         time_t render_start = time(NULL);
 
-        xre_use_root(context, app);
+        xre_use_root(root_context, app, &exit);
         screen_render(screen);
 
         time_t render_end = time(NULL);
@@ -226,16 +325,10 @@ int main(void) {
         if (elapsed_time < SPF) {
             msleep((long int)(1000 * (SPF - elapsed_time)));
         }
-
-        char c = kbhit();
-        if (c != EOF) {
-            exit = c == 27;
-            ungetc(c, stdin);
-        }
     }
     screen_render_clear(screen);
 
-    context_destroy(context);
+    context_destroy(root_context);
     screen_destroy(screen);
     screen = NULL;
     kb_clean_up();
