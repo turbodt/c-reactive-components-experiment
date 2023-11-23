@@ -34,6 +34,9 @@ void kb_clean_up(void) {
 
     tcsetattr(STDIN_FILENO, TCSANOW, oldt);
     fcntl(STDIN_FILENO, F_SETFL, *oldf);
+
+    XRE_FREE(oldt);
+    XRE_FREE(oldf);
 }
 
 
