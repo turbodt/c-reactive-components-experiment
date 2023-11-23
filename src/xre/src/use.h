@@ -2,11 +2,11 @@
 #define XRE_USE_H
 
 
-#include "./context_protected.h"
+#include "./context.h"
 
 
-void context_render_frame(struct IContext *, Component, ...);
-void context_vrender_frame(struct IContext *, Component, va_list);
+void xre_use_root(struct IContext *, Component, ...);
+void xre_vuse_root(struct IContext *, Component, va_list);
 
 void xre_use(struct IContext *, Component, ...);
 void xre_vuse(struct IContext *, Component, va_list);

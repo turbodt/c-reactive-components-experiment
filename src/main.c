@@ -216,7 +216,7 @@ int main(void) {
 
         time_t render_start = time(NULL);
 
-        context_render_frame(context, app);
+        xre_use_root(context, app);
         screen_render(screen);
 
         time_t render_end = time(NULL);

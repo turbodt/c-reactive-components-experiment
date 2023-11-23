@@ -1,23 +1,24 @@
 #include "./use.h"
+#include "./context_protected.h"
 #include "./base.h"
 
 
-static void component_render(struct IContext *, Component, va_list);
+static void component_call(struct IContext *, Component, va_list);
 
 
-void context_render_frame(
+void xre_use_root(
     struct IContext *parent_context,
     Component component,
     ...
 ) {
     va_list props;
     va_start(props, component);
-    context_vrender_frame(parent_context, component, props);
+    xre_vuse_root(parent_context, component, props);
     va_end(props);
 };
 
 
-void context_vrender_frame(
+void xre_vuse_root(
     struct IContext *parent_context,
     Component component,
     va_list props
@@ -55,7 +56,7 @@ void xre_vuse(
     ctx->children_index = 0;
     ctx->states_index = 0;
 
-    component_render(TO_CONTEXT_PUB(ctx), component, props);
+    component_call(TO_CONTEXT_PUB(ctx), component, props);
 };
 
 
@@ -71,13 +72,12 @@ void xre_use(
 };
 
 
-
 //--------------------------------------------------------------------------
 // Private
 //--------------------------------------------------------------------------
 
 
-inline void component_render(
+inline void component_call(
     struct IContext *ctx,
     Component component,
     va_list props
