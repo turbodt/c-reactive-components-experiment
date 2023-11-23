@@ -24,6 +24,4 @@ typedef struct ContextPrivate ContextPrivate;
 #define TO_CONTEXT_PUB(context) ((struct IContext *)(context))
 
 
-
-
 #endif
