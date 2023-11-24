@@ -36,11 +36,7 @@ static void screen_clean_up(void) {
 //------------------------------------------------------------------------------
 
 
-void box_component(struct XREContext * ctx, va_list props) {
-    (void) ctx;
-    struct Box const * box = va_arg(props, struct Box const *);
-    char bg = (char) va_arg(props, int);
-    char has_border = (char) va_arg(props, int);
+void draw_box(struct Box const *box, char bg, char has_border) {
     ScreenCoordinates coords = {0,0};
 
     for (int i = 0; i < (int) box->height; i++) {
@@ -88,13 +84,6 @@ void box_component(struct XREContext * ctx, va_list props) {
     screen_printf(screen, &coords, "'");
 };
 
-void use_box(struct XREContext * ctx, ...) {
-    va_list props;
-    va_start(props, ctx);
-    box_component(ctx, props);
-    va_end(props);
-};
-
 
 //------------------------------------------------------------------------------
 
@@ -126,69 +115,73 @@ char use_time_interval(struct XREContext *ctx, double seconds) {
 struct Timer;
 
 struct Timer {
-    struct XREStateChar * is_set_state;
-    struct StateTimeSpec * set_to_state;
+    char is_set;
+    struct timespec set_at;
+    double duration_sec;
+};
+
+void * timer_alloc(va_list args) {
+    (void) args;
+
+    struct Timer * timer = (struct Timer *) malloc(sizeof(struct Timer));
+
+    timer->is_set = 0;
+    timer->set_at = (struct timespec){0, 0};
+    timer->duration_sec = 0;
+
+    return timer;
 };
 
 void timer_set(struct Timer * timer, double seconds) {
-    struct timespec set_to = {0, 0};
-    clock_gettime(CLOCK_MONOTONIC, &set_to);
+    clock_gettime(CLOCK_MONOTONIC, &timer->set_at);
 
-    int isec = (int) seconds;
-    long int nsec = 1000000000L * (seconds - isec);
+    timer->duration_sec = seconds;
 
-    set_to.tv_sec += isec;
-    set_to.tv_nsec += nsec;
-
-    xre_state_set_char(timer->is_set_state, 1);
-    xre_state_set_timespec(timer->set_to_state, set_to);
+    timer->is_set = 1;
 };
 
-inline void timer_clear(struct Timer * timer) {
-    xre_state_set_char(timer->is_set_state, 0);
+void timer_clear(struct Timer * timer) {
+    timer->is_set = 0;
 };
 
-char timer_is_done(struct Timer *timer) {
-    char is_set = xre_state_get_char(timer->is_set_state);
-
-    if (!is_set) {
-        return 0;
+double timer_get_time_sec(struct Timer const *timer) {
+    if (!timer->is_set) {
+        return 0.0;
     }
-
-    struct timespec set_to = xre_state_get_timespec(timer->set_to_state);
 
     struct timespec now = {0, 0};
     clock_gettime(CLOCK_MONOTONIC, &now);
 
-    long int sdiff = now.tv_sec - set_to.tv_sec;
-    long int ndiff = ((sdiff * 1000000000L) + now.tv_nsec) - set_to.tv_nsec;
+    double current_sec = (now.tv_nsec - timer->set_at.tv_nsec) / 1000000000;
+    current_sec += now.tv_sec - timer->set_at.tv_sec;
 
-    if (ndiff < 0) {
-        return 0;
-    };
-
-    return 1;
+    return current_sec;
 };
 
-char timer_is_running(struct Timer *timer) {
-    char is_set = xre_state_get_char(timer->is_set_state);
+double timer_get_progress(struct Timer const *timer) {
+    double current_sec = timer_get_time_sec(timer);
+    if (timer->duration_sec < current_sec) {
+        return 1.0;
+    }
 
-    if (!is_set) {
+    return current_sec / timer->duration_sec;
+}
+
+char timer_is_done(struct Timer const *timer) {
+    return timer_get_progress(timer) >= 1.0;
+};
+
+char timer_is_running(struct Timer const *timer) {
+    if (!timer->is_set) {
         return 0;
     }
 
     return 1 - timer_is_done(timer);
 };
 
-struct Timer use_timer(struct XREContext *ctx) {
-    static struct timespec dummy_ts = {0,0};
-
-    struct XREStateChar * is_set_state = xre_use_char(ctx, 0);
-    struct StateTimeSpec * set_to_state = xre_use_timespec(ctx, dummy_ts);
-
-    struct Timer timer = { is_set_state, set_to_state };
-
-    return timer;
+struct Timer * use_timer(struct XREContext *ctx) {
+    struct IComponentRef * timer_ref = xre_use_ref(ctx, timer_alloc, free);
+    return timer_ref->value;
 }
 
 
@@ -271,7 +264,7 @@ void box_screen_component(struct XREContext * ctx, va_list props) {
         xre_state_set_double(pos_x_state, pos_x);
     }
 
-    use_box(ctx, &box, 'X', 0);
+    draw_box(&box, 'X', 0);
 
     text_coords.y = screen_size->rows -2;
     screen_printf(screen, &text_coords, "Use h, j, k, l to move");
@@ -329,8 +322,7 @@ void title_screen_component(struct XREContext * ctx, va_list props) {
 //------------------------------------------------------------------------------
 
 
-void transition_component(struct XREContext * ctx, va_list props) {
-    char const * title = va_arg(props, char const *);
+void draw_transition(char const * title) {
 
     size_t title_len = strlen(title);
 
@@ -342,7 +334,7 @@ void transition_component(struct XREContext * ctx, va_list props) {
         .height = 5
     };
 
-    use_box(ctx, &box, ' ', 1);
+    draw_box(&box, ' ', 1);
 
     ScreenCoordinates text_coords = {
         (screen_size->cols - title_len) / 2,
@@ -376,7 +368,7 @@ void app(struct XREContext * ctx, va_list props) {
     double fps = use_fps(ctx, 0.5);
     ScreenCoordinates text_coords = {0, 0};
     char pressed_key = use_pressed_key(ctx);
-    struct Timer timer = use_timer(ctx);
+    struct Timer * timer = use_timer(ctx);
 
     struct XREStateInt * child_index_state = xre_use_int(ctx, 0);
     int child_index = xre_state_get_int(child_index_state);
@@ -386,25 +378,20 @@ void app(struct XREContext * ctx, va_list props) {
     } else if (pressed_key == 'n') {
         child_index = (child_index + 1) % children_count;
 
-        timer_set(&timer, TRANSITION_DURATION);
+        timer_set(timer, TRANSITION_DURATION);
 
         xre_state_set_int(child_index_state, child_index);
     } else if (pressed_key == 'p') {
         child_index = (child_index + children_count - 1) % children_count;
 
-        timer_set(&timer, TRANSITION_DURATION);
+        timer_set(timer, TRANSITION_DURATION);
 
         xre_state_set_int(child_index_state, child_index);
     }
 
     xre_use_ikey(ctx, child_index, children[child_index]);
-    if (timer_is_running(&timer)) {
-        xre_use(
-            ctx,
-            "transition",
-            transition_component,
-            children_titles[child_index]
-        );
+    if (timer_is_running(timer)) {
+        draw_transition(children_titles[child_index]);
     }
 
     text_coords.x = 0;
