@@ -5,12 +5,12 @@
 #include "./context.h"
 
 
-void xre_use_root(struct XREContext *, Component, ...);
-void xre_vuse_root(struct XREContext *, Component, va_list);
+void xre_use_root(Component, struct XREContext *, ...);
+void xre_vuse_root(Component, struct XREContext *, va_list);
 
-void xre_use(struct XREContext *, char const *, Component, ...);
-void xre_use_ikey(struct XREContext *, int, Component, ...);
-void xre_vuse(struct XREContext *, char const *, Component, va_list);
+void xre_use(char const *, Component, struct XREContext *, ...);
+void xre_use_ikey(int, Component, struct XREContext *, ...);
+void xre_vuse(char const *, Component, struct XREContext *, va_list);
 
 
 #endif

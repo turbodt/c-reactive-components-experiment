@@ -12,9 +12,9 @@ static void component_call(struct XREContext *, Component, va_list);
 
 
 void xre_vuse(
-    struct XREContext *parent_context,
     char const * key,
     Component component,
+    struct XREContext *parent_context,
     va_list props
 ) {
 
@@ -33,22 +33,22 @@ void xre_vuse(
 
 
 void xre_use(
-    struct XREContext *parent_context,
     char const * key,
     Component component,
+    struct XREContext *parent_context,
     ...
 ) {
     va_list props;
-    va_start(props, component);
-    xre_vuse(parent_context, key, component, props);
+    va_start(props, parent_context);
+    xre_vuse(key, component, parent_context, props);
     va_end(props);
 };
 
 
 void xre_use_ikey(
-    struct XREContext *parent_context,
     int key,
     Component component,
+    struct XREContext *parent_context,
     ...
 ) {
     char key_str[12];
@@ -56,33 +56,33 @@ void xre_use_ikey(
     sprintf(key_str, "%d", key);
 
     va_list props;
-    va_start(props, component);
-    xre_vuse(parent_context, key_str, component, props);
+    va_start(props, parent_context);
+    xre_vuse(key_str, component, parent_context, props);
     va_end(props);
 };
 
 
 void xre_vuse_root(
-    struct XREContext *parent_context,
     Component component,
+    struct XREContext *parent_context,
     va_list props
 ) {
     ContextPrivate * pctx = TO_CONTEXT_PRIV(parent_context);
 
     pctx->states_index = 0;
 
-    xre_vuse(parent_context, XRE_ROOT_KEY, component, props);
+    xre_vuse(XRE_ROOT_KEY, component, parent_context, props);
 };
 
 
 void xre_use_root(
-    struct XREContext *parent_context,
     Component component,
+    struct XREContext *parent_context,
     ...
 ) {
     va_list props;
-    va_start(props, component);
-    xre_vuse_root(parent_context, component, props);
+    va_start(props, parent_context);
+    xre_vuse_root(component, parent_context, props);
     va_end(props);
 };
 

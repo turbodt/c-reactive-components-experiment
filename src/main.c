@@ -388,7 +388,7 @@ void app(struct XREContext * ctx, va_list props) {
         xre_state_set_int(child_index_state, child_index);
     }
 
-    xre_use_ikey(ctx, child_index, children[child_index]);
+    xre_use_ikey(child_index, children[child_index], ctx);
     if (timer_is_running(timer)) {
         draw_transition(children_titles[child_index]);
     }
@@ -427,7 +427,7 @@ int main(void) {
 
     int exit = 0;
     while (!exit) {
-        xre_use_root(root_context, app, &exit);
+        xre_use_root(app, root_context, &exit);
         screen_render(screen);
 
         msleep((long int)(1000 * SPF));
