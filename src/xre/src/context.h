@@ -13,15 +13,15 @@ struct IComponentRef {
 };
 
 
-struct IContext;
+struct XREContext;
 
 
-typedef void (*Component)(struct IContext *, va_list);
+typedef void (*Component)(struct XREContext *, va_list);
 
 
-struct IContext * context_alloc(char const *, Component);
-struct IContext * context_root_alloc(void);
-void context_destroy(struct IContext *);
+struct XREContext * xre_context_alloc(char const *, Component);
+struct XREContext * xre_context_root_alloc(void);
+void xre_context_destroy(struct XREContext *);
 
 
 #endif

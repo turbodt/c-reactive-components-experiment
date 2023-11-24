@@ -5,14 +5,14 @@
 #include <stdlib.h>
 
 
-struct IContextState;
+struct XREContextState;
 
-struct IContextState * context_state_alloc(void *, void (*)(void *));
-void context_state_destroy(struct IContextState *);
+struct XREContextState * xre_context_state_alloc(void *, void (*)(void *));
+void xre_context_state_destroy(struct XREContextState *);
 
 
-void * context_state_get(struct IContextState *);
-void context_state_set(struct IContextState *, void *);
+void * xre_context_state_get(struct XREContextState *);
+void xre_context_state_set(struct XREContextState *, void *);
 
 
 #endif

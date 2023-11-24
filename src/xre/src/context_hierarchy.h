@@ -5,8 +5,8 @@
 #include "./context.h"
 
 
-struct IContext const * context_children_get_ro(
-    struct IContext const *,
+struct XREContext const * xre_context_children_get_ro(
+    struct XREContext const *,
     char const *
 );
 

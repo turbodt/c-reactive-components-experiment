@@ -6,16 +6,16 @@
 #include <uthash.h>
 
 
-struct IContext {};
+struct XREContext {};
 struct ContextPrivate {
-    struct IContext base;
+    struct XREContext base;
     char * key;
 
     struct ContextPrivate *children;
 
     size_t states_index;
     size_t states_size;
-    struct IContextState **states;
+    struct XREContextState **states;
     Component component;
 
     UT_hash_handle hh;
@@ -24,7 +24,7 @@ typedef struct ContextPrivate ContextPrivate;
 
 
 #define TO_CONTEXT_PRIV(context) ((ContextPrivate *)(context))
-#define TO_CONTEXT_PUB(context) ((struct IContext *)(context))
+#define TO_CONTEXT_PUB(context) ((struct XREContext *)(context))
 
 
 #endif

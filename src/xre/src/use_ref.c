@@ -3,7 +3,7 @@
 
 
 struct IComponentRef * xre_use_vref(
-    struct IContext *context,
+    struct XREContext *context,
     void *(*constructor)(va_list),
     void (*destructor)(void *),
     va_list constructor_args
@@ -14,19 +14,19 @@ struct IComponentRef * xre_use_vref(
     ctx->states_index++;
 
     if (index >= ctx->states_size) {
-        ctx->states = (struct IContextState **) realloc(
+        ctx->states = (struct XREContextState **) realloc(
             ctx->states,
-            (ctx->states_size + 1) * sizeof(struct IContext *)
+            (ctx->states_size + 1) * sizeof(struct XREContext *)
         );
         ctx->states_size++;
 
-        ctx->states[index] = context_state_alloc(
+        ctx->states[index] = xre_context_state_alloc(
             constructor(constructor_args),
             destructor
         );
     }
 
-    struct IContextState * state = ctx->states[index];
+    struct XREContextState * state = ctx->states[index];
 
     // TODO: This is unsafe. Fix it.
     return (struct IComponentRef *) state;
@@ -34,7 +34,7 @@ struct IComponentRef * xre_use_vref(
 
 
 struct IComponentRef * xre_use_ref(
-    struct IContext *context,
+    struct XREContext *context,
     void *(*constructor)(va_list),
     void (*destructor)(void *),
     ...

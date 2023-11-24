@@ -2,20 +2,20 @@
 #include "./base.h"
 
 
-struct IContextState {};
+struct XREContextState {};
 typedef struct {
-    struct IContextState base;
+    struct XREContextState base;
     void * value;
     void (*destructor)(void *);
 } ContextStatePrivate;
 
 
 #define TO_PRIV(state) ((ContextStatePrivate *)(state))
-#define TO_PUB(state) ((struct IContextState *)(state))
+#define TO_PUB(state) ((struct XREContextState *)(state))
 
 
 
-struct IContextState * context_state_alloc(
+struct XREContextState * xre_context_state_alloc(
     void * value,
     void (*destructor)(void *)
 ) {
@@ -28,7 +28,7 @@ struct IContextState * context_state_alloc(
 };
 
 
-void context_state_destroy(struct IContextState *istate) {
+void xre_context_state_destroy(struct XREContextState *istate) {
     ContextStatePrivate * state = TO_PRIV(istate);
 
     if (!IS_NULL(state->destructor)) {
@@ -40,13 +40,13 @@ void context_state_destroy(struct IContextState *istate) {
 };
 
 
-void * context_state_get(struct IContextState *istate) {
+void * xre_context_state_get(struct XREContextState *istate) {
     ContextStatePrivate * state = TO_PRIV(istate);
     return state->value;
 };
 
 
-void context_state_set(struct IContextState *istate, void *value) {
+void xre_context_state_set(struct XREContextState *istate, void *value) {
     ContextStatePrivate * state = TO_PRIV(istate);
     state->value = value;
 };

@@ -6,7 +6,7 @@
 
 
 struct IComponentRef * xre_use_vref(
-    struct IContext *,
+    struct XREContext *,
     void *(*)(va_list),
     void (*)(void *),
     va_list
@@ -14,7 +14,7 @@ struct IComponentRef * xre_use_vref(
 
 
 struct IComponentRef * xre_use_ref(
-    struct IContext *,
+    struct XREContext *,
     void *(*)(va_list),
     void (*)(void *),
     ...
