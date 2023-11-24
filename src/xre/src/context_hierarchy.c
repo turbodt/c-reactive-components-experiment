@@ -12,8 +12,8 @@ inline ContextPrivate * context_children_get(
     return child;
 }
 
-inline struct IContext const * context_children_get_ro(
-    struct IContext const * context,
+inline struct XREContext const * context_children_get_ro(
+    struct XREContext const * context,
     char const * key
 ) {
     ContextPrivate const * ctx = TO_CONTEXT_PRIV(context);

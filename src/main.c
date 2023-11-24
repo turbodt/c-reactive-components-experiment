@@ -36,7 +36,7 @@ static void screen_clean_up(void) {
 //------------------------------------------------------------------------------
 
 
-void box_component(struct IContext * ctx, va_list props) {
+void box_component(struct XREContext * ctx, va_list props) {
     (void) ctx;
     struct Box const * box = va_arg(props, struct Box const *);
     char bg = (char) va_arg(props, int);
@@ -88,7 +88,7 @@ void box_component(struct IContext * ctx, va_list props) {
     screen_printf(screen, &coords, "'");
 };
 
-void use_box(struct IContext * ctx, ...) {
+void use_box(struct XREContext * ctx, ...) {
     va_list props;
     va_start(props, ctx);
     box_component(ctx, props);
@@ -99,7 +99,7 @@ void use_box(struct IContext * ctx, ...) {
 //------------------------------------------------------------------------------
 
 
-char use_timer(struct IContext *ctx, double seconds) {
+char use_timer(struct XREContext *ctx, double seconds) {
     struct StateTimeSpec * last_time_state = xre_use_timespec(
         ctx,
         (struct timespec){0,0}
@@ -124,7 +124,7 @@ char use_timer(struct IContext *ctx, double seconds) {
 //------------------------------------------------------------------------------
 
 
-char use_pressed_key(struct IContext *ctx) {
+char use_pressed_key(struct XREContext *ctx) {
     struct XREStateChar * last_pressed_state = xre_use_char(ctx, EOF);
     char debouce_time_has_passed = use_timer(ctx, KEY_PRESS_DEBOUNCE_S);
 
@@ -144,7 +144,7 @@ char use_pressed_key(struct IContext *ctx) {
 //------------------------------------------------------------------------------
 
 
-double use_fps(struct IContext * ctx, double interval_s) {
+double use_fps(struct XREContext * ctx, double interval_s) {
 
     char has_timer_passed = use_timer(ctx, interval_s);
     struct XREStateInt * frame_count_state = xre_use_int(ctx, 0);
@@ -167,7 +167,7 @@ double use_fps(struct IContext * ctx, double interval_s) {
 //------------------------------------------------------------------------------
 
 
-void box_screen_component(struct IContext * ctx, va_list props) {
+void box_screen_component(struct XREContext * ctx, va_list props) {
     (void) props;
 
     static double const x_delta = 1.5;
@@ -209,7 +209,7 @@ void box_screen_component(struct IContext * ctx, va_list props) {
 //------------------------------------------------------------------------------
 
 
-void title_screen_component(struct IContext * ctx, va_list props) {
+void title_screen_component(struct XREContext * ctx, va_list props) {
     (void) props;
     (void) ctx;
 
@@ -257,7 +257,7 @@ void title_screen_component(struct IContext * ctx, va_list props) {
 //------------------------------------------------------------------------------
 
 
-void app(struct IContext * ctx, va_list props) {
+void app(struct XREContext * ctx, va_list props) {
 
     static Component const children[] = {
         title_screen_component,
@@ -319,7 +319,7 @@ int main(void) {
 
     kb_init();
     screen_init(&screen_size);
-    struct IContext * root_context = context_root_alloc();
+    struct XREContext * root_context = context_root_alloc();
 
     int exit = 0;
     while (!exit) {

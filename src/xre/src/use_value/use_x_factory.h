@@ -16,7 +16,7 @@ struct XREState {
 #define XRE_USE_X_FACTORY_H(type, struct_type, name) \
 struct struct_type; \
  \
-struct struct_type * xre_use_##name(struct IContext *, type); \
+struct struct_type * xre_use_##name(struct XREContext *, type); \
 type xre_state_get_##name(struct struct_type *); \
 void xre_state_set_##name(struct struct_type *, type);
 
@@ -40,7 +40,7 @@ static void name##_destroy(void *value) { \
 }; \
 \
 \
-struct struct_type * xre_use_##name(struct IContext * ctx, type initial_value) { \
+struct struct_type * xre_use_##name(struct XREContext * ctx, type initial_value) { \
     struct IComponentRef * ref = xre_use_ref( \
         ctx, \
         name##_alloc, \

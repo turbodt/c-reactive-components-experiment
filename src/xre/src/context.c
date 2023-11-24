@@ -5,7 +5,7 @@
 #include <string.h>
 
 
-struct IContext * context_alloc(char const * key, Component component) {
+struct XREContext * context_alloc(char const * key, Component component) {
     ContextPrivate * ctx = XRE_ALLOC(ContextPrivate, 1);
 
     ctx->key = NULL;
@@ -25,16 +25,16 @@ struct IContext * context_alloc(char const * key, Component component) {
 
     ctx->component = component;
 
-    return (struct IContext *) ctx;
+    return (struct XREContext *) ctx;
 };
 
 
-inline struct IContext * context_root_alloc(void) {
+inline struct XREContext * context_root_alloc(void) {
     return context_alloc(NULL, NULL);
 };
 
 
-void context_destroy(struct IContext * context) {
+void context_destroy(struct XREContext * context) {
     ContextPrivate * ctx = TO_CONTEXT_PRIV(context);
 
     context_children_destroy(ctx);
