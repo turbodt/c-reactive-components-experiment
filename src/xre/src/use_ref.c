@@ -20,7 +20,7 @@ struct IComponentRef * xre_use_vref(
         );
         ctx->states_size++;
 
-        ctx->states[index] = context_state_alloc(
+        ctx->states[index] = xre_context_state_alloc(
             constructor(constructor_args),
             destructor
         );

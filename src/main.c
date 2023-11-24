@@ -319,7 +319,7 @@ int main(void) {
 
     kb_init();
     screen_init(&screen_size);
-    struct XREContext * root_context = context_root_alloc();
+    struct XREContext * root_context = xre_context_root_alloc();
 
     int exit = 0;
     while (!exit) {
@@ -330,7 +330,7 @@ int main(void) {
     }
     screen_render_clear(screen);
 
-    context_destroy(root_context);
+    xre_context_destroy(root_context);
     screen_clean_up();
     kb_clean_up();
 };

@@ -19,9 +19,9 @@ struct XREContext;
 typedef void (*Component)(struct XREContext *, va_list);
 
 
-struct XREContext * context_alloc(char const *, Component);
-struct XREContext * context_root_alloc(void);
-void context_destroy(struct XREContext *);
+struct XREContext * xre_context_alloc(char const *, Component);
+struct XREContext * xre_context_root_alloc(void);
+void xre_context_destroy(struct XREContext *);
 
 
 #endif

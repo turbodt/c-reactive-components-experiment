@@ -20,10 +20,10 @@ void xre_vuse(
 
     ContextPrivate * pctx = TO_CONTEXT_PRIV(parent_context);
 
-    ContextPrivate * ctx = context_children_get(pctx, key);
+    ContextPrivate * ctx = xre_context_children_get(pctx, key);
     if (IS_NULL(ctx)) {
-        ctx = TO_CONTEXT_PRIV(context_alloc(key, component));
-        context_children_add(pctx, ctx);
+        ctx = TO_CONTEXT_PRIV(xre_context_alloc(key, component));
+        xre_context_children_add(pctx, ctx);
     }
 
     ctx->states_index = 0;

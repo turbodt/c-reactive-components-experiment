@@ -15,7 +15,7 @@ typedef struct {
 
 
 
-struct XREContextState * context_state_alloc(
+struct XREContextState * xre_context_state_alloc(
     void * value,
     void (*destructor)(void *)
 ) {
@@ -28,7 +28,7 @@ struct XREContextState * context_state_alloc(
 };
 
 
-void context_state_destroy(struct XREContextState *istate) {
+void xre_context_state_destroy(struct XREContextState *istate) {
     ContextStatePrivate * state = TO_PRIV(istate);
 
     if (!IS_NULL(state->destructor)) {
@@ -40,13 +40,13 @@ void context_state_destroy(struct XREContextState *istate) {
 };
 
 
-void * context_state_get(struct XREContextState *istate) {
+void * xre_context_state_get(struct XREContextState *istate) {
     ContextStatePrivate * state = TO_PRIV(istate);
     return state->value;
 };
 
 
-void context_state_set(struct XREContextState *istate, void *value) {
+void xre_context_state_set(struct XREContextState *istate, void *value) {
     ContextStatePrivate * state = TO_PRIV(istate);
     state->value = value;
 };

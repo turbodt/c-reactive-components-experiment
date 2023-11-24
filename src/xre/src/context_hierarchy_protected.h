@@ -6,9 +6,9 @@
 #include "./context_protected.h"
 
 
-ContextPrivate * context_children_get(ContextPrivate const *, char const *);
-void context_children_add(ContextPrivate *, ContextPrivate *);
-void context_children_destroy(ContextPrivate *context);
+ContextPrivate * xre_context_children_get(ContextPrivate const *, char const *);
+void xre_context_children_add(ContextPrivate *, ContextPrivate *);
+void xre_context_children_destroy(ContextPrivate *context);
 
 
 #endif
