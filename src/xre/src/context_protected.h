@@ -3,19 +3,22 @@
 
 
 #include "./context.h"
+#include <uthash.h>
 
 
 struct IContext {};
 struct ContextPrivate {
     struct IContext base;
-    size_t children_index;
-    size_t children_size;
-    struct IContext **children;
+    char * key;
+
+    struct ContextPrivate *children;
 
     size_t states_index;
     size_t states_size;
     struct IContextState **states;
     Component component;
+
+    UT_hash_handle hh;
 };
 typedef struct ContextPrivate ContextPrivate;
 

@@ -2,6 +2,7 @@ TARGET_NAME = xre
 SRC_DIR = ./src
 
 EXTERNAL_INCLUDES = $(GLOBAL_INCLUDES) \
+                    -I./libs/uthash \
 
 EXTERNAL_LIBRARIES = \
 
