@@ -99,7 +99,7 @@ void use_box(struct XREContext * ctx, ...) {
 //------------------------------------------------------------------------------
 
 
-char use_timer(struct XREContext *ctx, double seconds) {
+char use_time_interval(struct XREContext *ctx, double seconds) {
     struct StateTimeSpec * last_time_state = xre_use_timespec(
         ctx,
         (struct timespec){0,0}
@@ -123,10 +123,81 @@ char use_timer(struct XREContext *ctx, double seconds) {
 
 //------------------------------------------------------------------------------
 
+struct Timer;
+
+struct Timer {
+    struct XREStateChar * is_set_state;
+    struct StateTimeSpec * set_to_state;
+};
+
+void timer_set(struct Timer * timer, double seconds) {
+    struct timespec set_to = {0, 0};
+    clock_gettime(CLOCK_MONOTONIC, &set_to);
+
+    int isec = (int) seconds;
+    long int nsec = 1000000000L * (seconds - isec);
+
+    set_to.tv_sec += isec;
+    set_to.tv_nsec += nsec;
+
+    xre_state_set_char(timer->is_set_state, 1);
+    xre_state_set_timespec(timer->set_to_state, set_to);
+};
+
+inline void timer_clear(struct Timer * timer) {
+    xre_state_set_char(timer->is_set_state, 0);
+};
+
+char timer_is_done(struct Timer *timer) {
+    char is_set = xre_state_get_char(timer->is_set_state);
+
+    if (!is_set) {
+        return 0;
+    }
+
+    struct timespec set_to = xre_state_get_timespec(timer->set_to_state);
+
+    struct timespec now = {0, 0};
+    clock_gettime(CLOCK_MONOTONIC, &now);
+
+    long int sdiff = now.tv_sec - set_to.tv_sec;
+    long int ndiff = ((sdiff * 1000000000L) + now.tv_nsec) - set_to.tv_nsec;
+
+    if (ndiff < 0) {
+        return 0;
+    };
+
+    return 1;
+};
+
+char timer_is_running(struct Timer *timer) {
+    char is_set = xre_state_get_char(timer->is_set_state);
+
+    if (!is_set) {
+        return 0;
+    }
+
+    return 1 - timer_is_done(timer);
+};
+
+struct Timer use_timer(struct XREContext *ctx) {
+    static struct timespec dummy_ts = {0,0};
+
+    struct XREStateChar * is_set_state = xre_use_char(ctx, 0);
+    struct StateTimeSpec * set_to_state = xre_use_timespec(ctx, dummy_ts);
+
+    struct Timer timer = { is_set_state, set_to_state };
+
+    return timer;
+}
+
+
+//------------------------------------------------------------------------------
+
 
 char use_pressed_key(struct XREContext *ctx) {
     struct XREStateChar * last_pressed_state = xre_use_char(ctx, EOF);
-    char debouce_time_has_passed = use_timer(ctx, KEY_PRESS_DEBOUNCE_S);
+    char debouce_time_has_passed = use_time_interval(ctx, KEY_PRESS_DEBOUNCE_S);
 
     char last_pressed = xre_state_get_char(last_pressed_state);
     char key_c = kbhit();
@@ -141,12 +212,13 @@ char use_pressed_key(struct XREContext *ctx) {
     return xre_state_get_char(last_pressed_state);
 }
 
+
 //------------------------------------------------------------------------------
 
 
 double use_fps(struct XREContext * ctx, double interval_s) {
 
-    char has_timer_passed = use_timer(ctx, interval_s);
+    char has_timer_passed = use_time_interval(ctx, interval_s);
     struct XREStateInt * frame_count_state = xre_use_int(ctx, 0);
     struct XREStateDouble * fps_state = xre_use_double(ctx, 0.0);
 
@@ -257,14 +329,46 @@ void title_screen_component(struct XREContext * ctx, va_list props) {
 //------------------------------------------------------------------------------
 
 
+void transition_component(struct XREContext * ctx, va_list props) {
+    char const * title = va_arg(props, char const *);
+
+    size_t title_len = strlen(title);
+
+    ScreenSize const * screen_size = screen_get_size(screen);
+    struct Box box = {
+        .x = 0,
+        .y = screen_size->rows / 2 - 2,
+        .width = screen_size->cols,
+        .height = 5
+    };
+
+    use_box(ctx, &box, ' ', 1);
+
+    ScreenCoordinates text_coords = {
+        (screen_size->cols - title_len) / 2,
+        screen_size->rows/2
+    };
+    screen_printf(screen, &text_coords, title);
+}
+
+
+//------------------------------------------------------------------------------
+
+
 void app(struct XREContext * ctx, va_list props) {
 
+    static size_t const children_count = 3;
     static Component const children[] = {
         title_screen_component,
         box_screen_component,
         box_screen_component,
-        NULL
     };
+    static char const * children_titles[] = {
+        "Title",
+        "Box 1",
+        "Box 2"
+    };
+    static double const TRANSITION_DURATION = 0.5;
 
     int * should_exit = va_arg(props, int *);
 
@@ -272,6 +376,7 @@ void app(struct XREContext * ctx, va_list props) {
     double fps = use_fps(ctx, 0.5);
     ScreenCoordinates text_coords = {0, 0};
     char pressed_key = use_pressed_key(ctx);
+    struct Timer timer = use_timer(ctx);
 
     struct XREStateInt * child_index_state = xre_use_int(ctx, 0);
     int child_index = xre_state_get_int(child_index_state);
@@ -279,23 +384,36 @@ void app(struct XREContext * ctx, va_list props) {
     if (pressed_key == 27) {
         *should_exit = 1;
     } else if (pressed_key == 'n') {
-        child_index++;
-        if (children[child_index] == NULL) {
-            child_index = 0;
-        }
+        child_index = (child_index + 1) % children_count;
+
+        timer_set(&timer, TRANSITION_DURATION);
+
+        xre_state_set_int(child_index_state, child_index);
+    } else if (pressed_key == 'p') {
+        child_index = (child_index + children_count - 1) % children_count;
+
+        timer_set(&timer, TRANSITION_DURATION);
 
         xre_state_set_int(child_index_state, child_index);
     }
 
     xre_use_ikey(ctx, child_index, children[child_index]);
+    if (timer_is_running(&timer)) {
+        xre_use(
+            ctx,
+            "transition",
+            transition_component,
+            children_titles[child_index]
+        );
+    }
 
     text_coords.x = 0;
     text_coords.y = screen_size->rows -1;
     screen_printf(screen, &text_coords, "Press <ESC> to terminate.");
 
-    text_coords.x = screen_size->cols - 34;
+    text_coords.x = screen_size->cols - 37;
     text_coords.y = screen_size->rows -1;
-    screen_printf(screen, &text_coords, "Press 'n' to switch among screens.");
+    screen_printf(screen, &text_coords, "Press 'p', 'n' to move among screens.");
 
     text_coords.x = 0;
     text_coords.y = 0;
@@ -313,8 +431,8 @@ int main(void) {
     double const SPF = 0.016;
     struct TerminalSize terminal_size = get_terminal_size();
     struct ScreenSize const screen_size = {
-        .rows=terminal_size.rows/2,
-        .cols=terminal_size.cols-2
+        .rows=25,
+        .cols=80
     };
 
     kb_init();
