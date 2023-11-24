@@ -5,6 +5,7 @@
 #include <string.h>
 #include "xre.h"
 #include "./kbhit.h"
+#include "./terminal.h"
 #include "./msleep.h"
 #include "./screen.h"
 #include "./use_time.h"
@@ -23,6 +24,13 @@ struct Box {
 
 
 static Screen * screen = NULL;
+static void screen_init(struct ScreenSize const * screen_size) {
+    screen = screen_alloc(stdout, screen_size);
+}
+static void screen_clean_up(void) {
+    screen_destroy(screen);
+    screen = NULL;
+}
 
 
 //------------------------------------------------------------------------------
@@ -230,6 +238,7 @@ void title_screen_component(struct IContext * ctx, va_list props) {
         };
 
         char * line_str = (char *) malloc(sizeof(char) * (line_len + 1));
+        line_str[line_len] = '\0';
 
         strncpy(line_str, start_ptr, line_len);
 
@@ -304,32 +313,28 @@ void app(struct IContext * ctx, va_list props) {
 
 
 int main(void) {
-    kb_init();
-    screen = screen_alloc(stdout, &(ScreenSize){25, 80});
-    struct IContext * root_context = context_alloc(NULL);
-
     double const SPF = 0.016;
+    struct TerminalSize terminal_size = get_terminal_size();
+    struct ScreenSize const screen_size = {
+        .rows=terminal_size.rows/2,
+        .cols=terminal_size.cols-2
+    };
+
+    kb_init();
+    screen_init(&screen_size);
+    struct IContext * root_context = context_alloc(NULL);
 
     int exit = 0;
     while (!exit) {
 
-        time_t render_start = time(NULL);
-
         xre_use_root(root_context, app, &exit);
         screen_render(screen);
 
-        time_t render_end = time(NULL);
-
-        double elapsed_time = difftime(render_end, render_start);
-
-        if (elapsed_time < SPF) {
-            msleep((long int)(1000 * (SPF - elapsed_time)));
-        }
+        msleep((long int)(1000 * SPF));
     }
     screen_render_clear(screen);
 
     context_destroy(root_context);
-    screen_destroy(screen);
-    screen = NULL;
+    screen_clean_up();
     kb_clean_up();
 };

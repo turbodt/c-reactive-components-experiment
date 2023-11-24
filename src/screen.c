@@ -37,6 +37,7 @@ static void screen_render_footer(Screen *);
 static void remove_header(void);
 static void remove_footer(void);
 static void remove_last_line(void);
+static void remove_current_line(void);
 
 
 Screen * screen_alloc(FILE * out, ScreenSize const * size) {
@@ -204,7 +205,7 @@ inline void screen_render_line(Screen * screen, size_t row_index) {
 inline void screen_render_header(Screen * screen) {
     ScreenSize const * size = screen_get_size(screen);
 
-    fprintf(screen->out, "╔");
+    fprintf(screen->out, "\n╔");
     for (size_t i = 0; i < size->cols; i++) {
         fprintf(screen->out, "═");
     }
@@ -222,10 +223,11 @@ inline void screen_render_footer(Screen * screen) {
     for (size_t i = 0; i < size->cols; i++) {
         fprintf(screen->out, "═");
     }
-    fprintf(screen->out, "╝\n");
+    fprintf(screen->out, "╝");
+    fprintf(screen->out, "\033[G");
 };
 inline void remove_footer(void) {
-    remove_last_line();
+    remove_current_line();
 };
 
 
@@ -249,4 +251,9 @@ void screen_clear_last_values(Screen *screen) {
 
 inline void remove_last_line(void) {
     printf("\033[A\033[K");
+};
+
+
+inline void remove_current_line(void) {
+    printf("\033[K");
 };

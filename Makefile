@@ -29,6 +29,7 @@ SRC = $(SRC_DIR)/main.c \
 			$(SRC_DIR)/screen.c \
 			\
 			$(SRC_DIR)/kbhit_unix_posix.c \
+			$(SRC_DIR)/terminal_unix.c \
 
 OBJ_DIR = $(PWD)/build
 OBJ = $(patsubst $(SRC_DIR)/%.c, $(OBJ_DIR)/%.o, $(SRC))
