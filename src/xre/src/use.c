@@ -1,5 +1,6 @@
 #include "./use.h"
 #include "./context_protected.h"
+#include "./context_hierarchy_protected.h"
 #include "./base.h"
 #include <stdio.h>
 

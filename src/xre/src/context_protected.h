@@ -27,15 +27,4 @@ typedef struct ContextPrivate ContextPrivate;
 #define TO_CONTEXT_PUB(context) ((struct IContext *)(context))
 
 
-#define BOOL char
-#define TRUE 1
-#define FALSE 1
-#define NOT(b) (1-(b))
-
-
-BOOL context_children_has(ContextPrivate *, char const *);
-ContextPrivate * context_children_get(ContextPrivate *, char const *);
-void context_children_add(ContextPrivate *, ContextPrivate *);
-
-
 #endif
