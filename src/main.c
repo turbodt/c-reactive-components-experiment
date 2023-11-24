@@ -257,14 +257,15 @@ void title_screen_component(struct IContext * ctx, va_list props) {
 //------------------------------------------------------------------------------
 
 
-XRE_USE_X_FACTORY_H(Component, StateComponent, component);
-XRE_USE_X_FACTORY(Component, StateComponent, Component, component);
-
-
-//------------------------------------------------------------------------------
-
-
 void app(struct IContext * ctx, va_list props) {
+
+    static Component const children[] = {
+        title_screen_component,
+        box_screen_component,
+        box_screen_component,
+        NULL
+    };
+
     int * should_exit = va_arg(props, int *);
 
     ScreenSize const * screen_size = screen_get_size(screen);
@@ -272,26 +273,21 @@ void app(struct IContext * ctx, va_list props) {
     ScreenCoordinates text_coords = {0, 0};
     char pressed_key = use_pressed_key(ctx);
 
-    struct StateComponent * child_state = xre_use_component(
-        ctx,
-        title_screen_component
-    );
-    Component child = xre_state_get_component(child_state);
+    struct XREStateInt * child_index_state = xre_use_int(ctx, 0);
+    int child_index = xre_state_get_int(child_index_state);
 
     if (pressed_key == 27) {
         *should_exit = 1;
     } else if (pressed_key == 'n') {
-
-        if (child == box_screen_component) {
-            child = title_screen_component;
-        } else {
-            child = box_screen_component;
+        child_index++;
+        if (children[child_index] == NULL) {
+            child_index = 0;
         }
 
-        xre_state_set_component(child_state, child);
+        xre_state_set_int(child_index_state, child_index);
     }
 
-    xre_use(ctx, child);
+    xre_use_ikey(ctx, child_index, children[child_index]);
 
     text_coords.x = 0;
     text_coords.y = screen_size->rows -1;
@@ -313,6 +309,7 @@ void app(struct IContext * ctx, va_list props) {
 
 
 int main(void) {
+
     double const SPF = 0.016;
     struct TerminalSize terminal_size = get_terminal_size();
     struct ScreenSize const screen_size = {
@@ -322,7 +319,7 @@ int main(void) {
 
     kb_init();
     screen_init(&screen_size);
-    struct IContext * root_context = context_alloc(NULL);
+    struct IContext * root_context = context_alloc(NULL, NULL);
 
     int exit = 0;
     while (!exit) {

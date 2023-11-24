@@ -19,7 +19,7 @@ struct IContext;
 typedef void (*Component)(struct IContext *, va_list);
 
 
-struct IContext * context_alloc(Component);
+struct IContext * context_alloc(char const *, Component);
 void context_destroy(struct IContext *);
 
 
