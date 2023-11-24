@@ -29,6 +29,11 @@ struct IContext * context_alloc(char const * key, Component component) {
 };
 
 
+inline struct IContext * context_root_alloc(void) {
+    return context_alloc(NULL, NULL);
+};
+
+
 void context_destroy(struct IContext * context) {
     ContextPrivate * ctx = TO_CONTEXT_PRIV(context);
 

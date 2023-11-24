@@ -319,11 +319,10 @@ int main(void) {
 
     kb_init();
     screen_init(&screen_size);
-    struct IContext * root_context = context_alloc(NULL, NULL);
+    struct IContext * root_context = context_root_alloc();
 
     int exit = 0;
     while (!exit) {
-
         xre_use_root(root_context, app, &exit);
         screen_render(screen);
 
