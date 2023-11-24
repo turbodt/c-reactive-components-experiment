@@ -180,8 +180,7 @@ char timer_is_running(struct Timer const *timer) {
 };
 
 struct Timer * use_timer(struct XREContext *ctx) {
-    struct IComponentRef * timer_ref = xre_use_ref(ctx, timer_alloc, free);
-    return timer_ref->value;
+    return (struct Timer *) xre_use_ref(ctx, timer_alloc, free);
 }
 
 

@@ -7,12 +7,6 @@
 #include <stdarg.h>
 
 
-
-struct IComponentRef {
-    void * value;
-};
-
-
 struct XREContext;
 
 

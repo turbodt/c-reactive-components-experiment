@@ -5,7 +5,7 @@
 #include "./context.h"
 
 
-struct IComponentRef * xre_use_vref(
+void * xre_use_vref(
     struct XREContext *,
     void *(*)(va_list),
     void (*)(void *),
@@ -13,7 +13,7 @@ struct IComponentRef * xre_use_vref(
 );
 
 
-struct IComponentRef * xre_use_ref(
+void * xre_use_ref(
     struct XREContext *,
     void *(*)(va_list),
     void (*)(void *),

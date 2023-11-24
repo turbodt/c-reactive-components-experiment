@@ -2,7 +2,7 @@
 #include "./context_protected.h"
 
 
-struct IComponentRef * xre_use_vref(
+void * xre_use_vref(
     struct XREContext *context,
     void *(*constructor)(va_list),
     void (*destructor)(void *),
@@ -28,12 +28,11 @@ struct IComponentRef * xre_use_vref(
 
     struct XREContextState * state = ctx->states[index];
 
-    // TODO: This is unsafe. Fix it.
-    return (struct IComponentRef *) state;
+    return xre_context_state_get(state);
 };
 
 
-struct IComponentRef * xre_use_ref(
+void * xre_use_ref(
     struct XREContext *context,
     void *(*constructor)(va_list),
     void (*destructor)(void *),
@@ -41,7 +40,7 @@ struct IComponentRef * xre_use_ref(
 ) {
     va_list constructor_args;
     va_start(constructor_args, destructor);
-    struct IComponentRef * ref = xre_use_vref(
+    void * ref = xre_use_vref(
         context,
         constructor,
         destructor,

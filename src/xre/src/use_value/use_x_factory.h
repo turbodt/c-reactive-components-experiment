@@ -9,7 +9,7 @@
 
 
 struct XREState {
-    struct IComponentRef base;
+    void * value;
 };
 
 
@@ -28,36 +28,37 @@ struct struct_type { \
 }; \
  \
  \
-static void * name##_alloc(va_list args) { \
-    type * value = XRE_ALLOC(type, 1); \
+static void * name##_state_alloc(va_list args) { \
+    struct struct_type * state = XRE_ALLOC(struct struct_type, 1); \
+    state->base.value = XRE_ALLOC(type, 1); \
     type new_value = (type) va_arg(args, promoted_type); \
-    assign(value, &new_value); \
-    return value; \
+    assign(state->base.value, &new_value); \
+    return state; \
 }; \
  \
-static void name##_destroy(void *value) { \
-    XRE_FREE(value); \
+static void name##_state_destroy(void *state) { \
+    XRE_FREE(((struct struct_type *) state)->base.value); \
+    XRE_FREE(state); \
 }; \
 \
 \
 struct struct_type * xre_use_##name(struct XREContext * ctx, type initial_value) { \
-    struct IComponentRef * ref = xre_use_ref( \
+    return (struct struct_type *) xre_use_ref( \
         ctx, \
-        name##_alloc, \
-        name##_destroy, \
+        name##_state_alloc, \
+        name##_state_destroy, \
         initial_value \
     ); \
-    return (struct struct_type *) ref; \
 }; \
  \
  \
 inline type xre_state_get_##name(struct struct_type *state) { \
-    return *((type *) state->base.base.value); \
+    return *((type *) state->base.value); \
 }; \
  \
  \
 inline void xre_state_set_##name(struct struct_type *state, type value) { \
-    type * ptr = (type *) state->base.base.value; \
+    type * ptr = (type *) state->base.value; \
     *ptr = value; \
     assign(ptr, &value); \
 }
