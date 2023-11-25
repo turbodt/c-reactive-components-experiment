@@ -6,7 +6,7 @@ void kb_init(void);
 void kb_clean_up(void);
 
 
-char kbhit(void);
+int kbhit(void);
 
 
 #endif

@@ -40,7 +40,7 @@ void kb_clean_up(void) {
 }
 
 
-inline char kbhit(void) {
+inline int kbhit(void) {
     XRE_ASSERT_ALLOC(oldt);
     XRE_ASSERT_ALLOC(oldf);
     return getchar();

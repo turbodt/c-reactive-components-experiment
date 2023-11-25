@@ -191,17 +191,17 @@ char use_pressed_key(struct XREContext *ctx) {
     struct XREStateChar * last_pressed_state = xre_use_char(ctx, EOF);
     char debouce_time_has_passed = use_time_interval(ctx, KEY_PRESS_DEBOUNCE_S);
 
-    char last_pressed = xre_state_get_char(last_pressed_state);
-    char key_c = kbhit();
+    int last_pressed = xre_state_get_int(last_pressed_state);
+    int key_c = kbhit();
     ungetc(key_c, stdin);
 
     if (last_pressed != EOF && !debouce_time_has_passed) {
         return EOF;
     }
 
-    xre_state_set_char(last_pressed_state, key_c);
+    xre_state_set_int(last_pressed_state, key_c);
 
-    return xre_state_get_char(last_pressed_state);
+    return xre_state_get_int(last_pressed_state);
 }
 
 
