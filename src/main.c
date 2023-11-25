@@ -187,8 +187,8 @@ struct Timer * use_timer(struct XREContext *ctx) {
 //------------------------------------------------------------------------------
 
 
-char use_pressed_key(struct XREContext *ctx) {
-    struct XREStateChar * last_pressed_state = xre_use_char(ctx, EOF);
+int use_pressed_key(struct XREContext *ctx) {
+    struct XREStateInt * last_pressed_state = xre_use_int(ctx, EOF);
     char debouce_time_has_passed = use_time_interval(ctx, KEY_PRESS_DEBOUNCE_S);
 
     int last_pressed = xre_state_get_int(last_pressed_state);
@@ -237,7 +237,7 @@ void box_screen_component(struct XREContext * ctx, va_list props) {
     static double const x_delta = 1.5;
     static double const y_delta = 1.0;
 
-    char pressed_key = use_pressed_key(ctx);
+    int pressed_key = use_pressed_key(ctx);
 
     struct XREStateDouble * pos_x_state = xre_use_double(ctx, 37.5);
     double pos_x = xre_state_get_double(pos_x_state);
@@ -366,7 +366,7 @@ void app(struct XREContext * ctx, va_list props) {
     ScreenSize const * screen_size = screen_get_size(screen);
     double fps = use_fps(ctx, 0.5);
     ScreenCoordinates text_coords = {0, 0};
-    char pressed_key = use_pressed_key(ctx);
+    int pressed_key = use_pressed_key(ctx);
     struct Timer * timer = use_timer(ctx);
 
     struct XREStateInt * child_index_state = xre_use_int(ctx, 0);
@@ -417,8 +417,8 @@ int main(void) {
     double const SPF = 0.016;
     struct TerminalSize terminal_size = get_terminal_size();
     struct ScreenSize const screen_size = {
-        .rows=25,
-        .cols=80
+        .rows=terminal_size.rows - 2,
+        .cols=terminal_size.cols - 2
     };
 
     kb_init();

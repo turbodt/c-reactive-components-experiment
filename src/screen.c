@@ -94,7 +94,7 @@ void screen_render_clear(Screen * screen) {
     for (size_t i = 0; i < size->rows; i++) {
         remove_last_line();
     }
-    remove_header();
+    remove_footer();
 
     screen->has_render = FALSE;
 };
@@ -199,17 +199,20 @@ inline void screen_render_line(Screen * screen, size_t row_index) {
         screen->out
     );
     fprintf(screen->out, "║\n");
+    fprintf(screen->out, "\033[G");
 };
 
 
 inline void screen_render_header(Screen * screen) {
     ScreenSize const * size = screen_get_size(screen);
 
-    fprintf(screen->out, "\n╔");
+    fprintf(screen->out, "\033[G");
+    fprintf(screen->out, "╔");
     for (size_t i = 0; i < size->cols; i++) {
         fprintf(screen->out, "═");
     }
     fprintf(screen->out, "╗\n");
+    fprintf(screen->out, "\033[G");
 };
 inline void remove_header(void) {
     remove_last_line();
