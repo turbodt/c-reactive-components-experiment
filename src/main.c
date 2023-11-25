@@ -115,7 +115,7 @@ char use_time_interval(struct XREContext *ctx, double seconds) {
 struct Timer;
 
 struct Timer {
-    char is_set;
+    int is_set;
     struct timespec set_at;
     double duration_sec;
 };
@@ -152,8 +152,10 @@ double timer_get_time_sec(struct Timer const *timer) {
     struct timespec now = {0, 0};
     clock_gettime(CLOCK_MONOTONIC, &now);
 
-    double current_sec = (now.tv_nsec - timer->set_at.tv_nsec) / 1000000000;
-    current_sec += now.tv_sec - timer->set_at.tv_sec;
+    double ndiff = now.tv_nsec - timer->set_at.tv_nsec;
+    double sdiff = now.tv_sec - timer->set_at.tv_sec;
+    double current_sec = ndiff / 1000000000.0;
+    current_sec += sdiff;
 
     return current_sec;
 };
@@ -167,11 +169,11 @@ double timer_get_progress(struct Timer const *timer) {
     return current_sec / timer->duration_sec;
 }
 
-char timer_is_done(struct Timer const *timer) {
-    return timer_get_progress(timer) >= 1.0;
+int timer_is_done(struct Timer const *timer) {
+    return timer_get_progress(timer) < 1.0 ? 0 : 1;
 };
 
-char timer_is_running(struct Timer const *timer) {
+int timer_is_running(struct Timer const *timer) {
     if (!timer->is_set) {
         return 0;
     }
@@ -346,16 +348,41 @@ void draw_transition(char const * title) {
 //------------------------------------------------------------------------------
 
 
+void timer_screen_component(struct XREContext * ctx, va_list props) {
+    int pressed_key = use_pressed_key(ctx);
+    struct Timer * timer = use_timer(ctx);
+    ScreenCoordinates text_coords = {1, 8};
+
+    if (timer_is_running(timer)) {
+        double s = timer_get_time_sec(timer);
+        screen_printf(screen, &text_coords, "Timer: %fs", s);
+        return;
+    } else if (timer_is_done(timer)) {
+        timer_clear(timer);
+        return;
+    } else if (pressed_key != EOF) {
+        timer_set(timer, 5.0);
+    }
+
+    screen_printf(screen, &text_coords, "Press any key");
+}
+
+
+//------------------------------------------------------------------------------
+
+
 void app(struct XREContext * ctx, va_list props) {
 
-    static size_t const children_count = 3;
+    static size_t const children_count = 4;
     static Component const children[] = {
         title_screen_component,
+        timer_screen_component,
         box_screen_component,
         box_screen_component,
     };
     static char const * children_titles[] = {
         "Title",
+        "Timer",
         "Box 1",
         "Box 2"
     };
@@ -417,7 +444,7 @@ int main(void) {
     double const SPF = 0.016;
     struct TerminalSize terminal_size = get_terminal_size();
     struct ScreenSize const screen_size = {
-        .rows=terminal_size.rows - 2,
+        .rows=terminal_size.rows / 2,
         .cols=terminal_size.cols - 2
     };
 
