@@ -113,6 +113,9 @@ char use_time_interval(struct XREContext *ctx, double seconds) {
 //------------------------------------------------------------------------------
 
 struct Timer;
+int timer_is_done(struct Timer const *);
+int timer_is_running(struct Timer const *);
+double timer_get_progress(struct Timer const *);
 
 struct Timer {
     int is_set;
@@ -127,7 +130,7 @@ void * timer_alloc(va_list args) {
 
     timer->is_set = 0;
     timer->set_at = (struct timespec){0, 0};
-    timer->duration_sec = 0;
+    timer->duration_sec = 1.0;
 
     return timer;
 };
@@ -145,7 +148,7 @@ void timer_clear(struct Timer * timer) {
 };
 
 double timer_get_time_sec(struct Timer const *timer) {
-    if (!timer->is_set) {
+    if (timer->is_set == 0) {
         return 0.0;
     }
 
@@ -154,27 +157,31 @@ double timer_get_time_sec(struct Timer const *timer) {
 
     double ndiff = now.tv_nsec - timer->set_at.tv_nsec;
     double sdiff = now.tv_sec - timer->set_at.tv_sec;
-    double current_sec = ndiff / 1000000000.0;
-    current_sec += sdiff;
+    double running_sec = ndiff / 1000000000L;
+    running_sec += sdiff;
 
-    return current_sec;
+    return running_sec;
 };
 
 double timer_get_progress(struct Timer const *timer) {
-    double current_sec = timer_get_time_sec(timer);
-    if (timer->duration_sec < current_sec) {
-        return 1.0;
+    if (timer->is_set == 0) {
+        return 0.0;
     }
 
-    return current_sec / timer->duration_sec;
+    double running_sec = timer_get_time_sec(timer);
+    if (running_sec < timer->duration_sec) {
+        return running_sec / timer->duration_sec;
+    }
+
+    return 1.0;
 }
 
-int timer_is_done(struct Timer const *timer) {
+inline int timer_is_done(struct Timer const *timer) {
     return timer_get_progress(timer) < 1.0 ? 0 : 1;
 };
 
-int timer_is_running(struct Timer const *timer) {
-    if (!timer->is_set) {
+inline int timer_is_running(struct Timer const *timer) {
+    if (timer->is_set == 0) {
         return 0;
     }
 
@@ -349,22 +356,52 @@ void draw_transition(char const * title) {
 
 
 void timer_screen_component(struct XREContext * ctx, va_list props) {
+    (void) props;
+
+    static char const title[] = "Timer Demo";
+
+    ScreenSize const * screen_size = screen_get_size(screen);
     int pressed_key = use_pressed_key(ctx);
     struct Timer * timer = use_timer(ctx);
-    ScreenCoordinates text_coords = {1, 8};
+    ScreenCoordinates text_coords = {0, 0};
+
+    text_coords.x = (screen_size->cols - strlen(title)) / 2;
+    screen_printf(screen, &text_coords, "%s", title);
 
     if (timer_is_running(timer)) {
-        double s = timer_get_time_sec(timer);
-        screen_printf(screen, &text_coords, "Timer: %fs", s);
-        return;
+        double running_sec = timer_get_time_sec(timer);
+        text_coords.y = 4;
+        screen_printf(
+            screen,
+            &text_coords,
+            "Timer: %fs of %fs.",
+            running_sec,
+            timer->duration_sec
+        );
     } else if (timer_is_done(timer)) {
+        text_coords.y = 4;
+        screen_printf(screen, &text_coords, "Timer is done!");
         timer_clear(timer);
-        return;
     } else if (pressed_key != EOF) {
         timer_set(timer, 5.0);
+    } else {
+        text_coords.y = 7;
+        screen_printf(screen, &text_coords, "Press any key");
     }
 
-    screen_printf(screen, &text_coords, "Press any key");
+    double progress = timer_get_progress(timer);
+    struct Box pbar_box = {(screen_size->cols - 10) / 2, 5, 10, 1};
+    draw_box(&pbar_box, '-', 0);
+    for (size_t i = 0; i < pbar_box.width; i++) {
+        if (i >= progress * (double) pbar_box.width) {
+            continue;
+        }
+        ScreenCoordinates char_coords = {pbar_box.x + i, pbar_box.y};
+        screen_printf(screen, &char_coords, "X");
+    }
+    text_coords.y = pbar_box.y;
+    text_coords.x = pbar_box.x + pbar_box.width + 1;
+    screen_printf(screen, &text_coords, "%d%%", (int)(100*progress));
 }
 
 
