@@ -3,6 +3,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
+#include <wchar.h>
 
 
 #define SCREEN_MAX_COLS 256
@@ -12,30 +13,38 @@
 #define MAX(a, b) ((a) < (b) ? (b) : (a))
 #define MIN(a, b) ((a) > (b) ? (b) : (a))
 
-#define BOOL char
+#define BOOL int
 #define FALSE 0
 #define TRUE 1
 
 #define VAL_INDEX(size, i, j) ((i) * (size)->cols + (j))
 
+
 struct Screen {
     FILE * out;
     ScreenSize size;
-    char * next_values;
-    char * last_values;
-    BOOL has_render;
+    wchar_t * next_values;
+    wchar_t * last_values;
+    BOOL has_change;
+    BOOL has_rendered;
 };
 
 
-static void screen_init(Screen *, FILE *, ScreenSize const *);
-static void screen_clean_up(Screen *);
-static void screen_clear_next_values(Screen *);
-static void screen_clear_last_values(Screen *);
-static void screen_render_line(Screen *, size_t);
-static void screen_render_header(Screen *);
-static void screen_render_footer(Screen *);
-static void remove_header(void);
-static void remove_footer(void);
+static void screen_rerender(Screen *);
+static void screen_render_new(Screen *);
+static void screen_update_last_values(Screen *);
+static void screen_initialize(Screen *);
+static wchar_t * screen_get_next_row_at(Screen *, size_t);
+static wchar_t * screen_get_last_row_at(Screen *, size_t);
+static size_t buffer_get_len(ScreenSize const *);
+static void buffer_clear(wchar_t *, ScreenSize const *);
+static wchar_t * buffer_get_line(wchar_t *, ScreenSize const *, size_t);
+static void buffer_set_line(
+    wchar_t *,
+    ScreenSize const *,
+    size_t,
+    wchar_t const *
+);
 static void remove_last_line(void);
 static void remove_current_line(void);
 
@@ -44,99 +53,151 @@ Screen * screen_alloc(FILE * out, ScreenSize const * size) {
     Screen * screen = XRE_ALLOC(Screen, 1);
     XRE_ASSERT_ALLOC(screen);
 
-    screen_init(screen, out, size);
+    screen->out = out;
+    screen->size = *size;
+
+    size_t wc_size = sizeof(wchar_t);
+    screen->next_values = XRE_ALLOC(wchar_t, buffer_get_len(size) * wc_size);
+    XRE_ASSERT_ALLOC(screen->next_values);
+
+    screen->last_values = XRE_ALLOC(wchar_t, buffer_get_len(size) * wc_size);
+    XRE_ASSERT_ALLOC(screen->last_values);
+
+    screen->has_rendered = FALSE;
+
+    screen_initialize(screen);
 
     return screen;
-};
+}
 
-
-void screen_destroy(Screen *screen) {
+void screen_destroy(Screen * screen) {
     RETURN_IF_NULL(screen);
 
-    screen_clean_up(screen);
+    XRE_FREE(screen->next_values);
+    XRE_FREE(screen->last_values);
     XRE_FREE(screen);
-};
+}
 
 
-void screen_render(Screen *screen) {
-    ScreenSize const * size = screen_get_size(screen);
+void screen_render(Screen * screen) {
+    RETURN_IF_NULL(screen);
 
-    if (strcmp(screen->last_values, screen->next_values) == 0) {
+    if (!screen->has_change) {
         return;
     }
 
-    screen_render_clear(screen);
-
-    screen_render_header(screen);
-    for (size_t i = 0; i < size->rows; i++) {
-        screen_render_line(screen, i);
+    if (screen->has_rendered) {
+        screen_rerender(screen);
+    } else {
+        screen_render_new(screen);
     }
-    screen_render_footer(screen);
 
-    screen->has_render = TRUE;
-
-    screen_clear_last_values(screen);
-
-    char * swap_value = screen->next_values;
-    screen->next_values = screen->last_values;
-    screen->last_values = swap_value;
-};
+    screen->has_rendered = TRUE;
+    screen_update_last_values(screen);
+}
 
 
 void screen_render_clear(Screen * screen) {
-    if (!screen->has_render) {
+    RETURN_IF_NULL(screen);
+
+    if (!screen->has_rendered) {
         return;
     }
 
     ScreenSize const * size = screen_get_size(screen);
 
-    remove_header();
-    for (size_t i = 0; i < size->rows; i++) {
+    if (size->rows > 0) {
+        remove_current_line();
+    }
+    for (size_t i = 0; i < size->rows - 1; i++) {
         remove_last_line();
     }
-    remove_footer();
 
-    screen->has_render = FALSE;
-};
+    screen->has_rendered = FALSE;
+}
+
+
+void screen_vwprintf(
+    Screen * screen,
+    ScreenCoordinates const * coords,
+    wchar_t const * format,
+    va_list args
+) {
+    RETURN_IF_NULL(screen);
+    RETURN_IF_NULL(coords);
+
+    ScreenSize const * screen_size = screen_get_size(screen);
+
+    if (
+        coords->y < 0
+        || coords->x >= (int) screen_size->cols
+        || coords->y >= (int) screen_size->rows
+    ) {
+        return;
+    }
+
+    size_t const max_len = screen_size->cols - coords->x;
+
+    wchar_t buffer[max_len + 1];
+    buffer[max_len] = L'\0';
+    vswprintf(buffer, max_len + 1, format, args);
+
+    size_t buffer_offset = MAX(-coords->x, 0);
+    size_t const buffer_len = wcslen(buffer);
+
+    if (buffer_offset >= buffer_len) {
+        return;
+    }
+
+    size_t const print_len = buffer_len - buffer_offset;
+
+    wchar_t * const screen_row = screen_get_next_row_at(screen, coords->y);
+    wmemcpy(screen_row + MAX(coords->x, 0), buffer + buffer_offset, print_len);
+
+    screen->has_change = TRUE;
+}
 
 
 void screen_vprintf(
     Screen * screen,
     ScreenCoordinates const * coords,
     char const * format,
-    va_list props
+    va_list args
 ) {
-    ScreenCoordinates final_coords;
-    ScreenSize const * size = screen_get_size(screen);
+    RETURN_IF_NULL(screen);
+    RETURN_IF_NULL(coords);
 
-    if (coords->y < 0 || coords->y >= (int) size->rows) {
+    ScreenSize const * screen_size = screen_get_size(screen);
+
+    if (
+        coords->y < 0
+        || coords->x >= (int) screen_size->cols
+        || coords->y >= (int) screen_size->rows
+    ) {
         return;
     }
 
-    char buffer[size->rows];
-    vsnprintf(buffer, size->cols, format, props);
-    size_t str_len = strlen(buffer);
+    size_t const max_len = screen_size->cols - MAX(coords->x, 0);
 
-    if (coords->x + (int) str_len < 0 || coords->x >= (int) size->cols) {
-        return;
-    }
+    char buffer[max_len + 1];
+    buffer[max_len] = '\0';
+    vsnprintf(buffer, max_len, format, args);
 
-    size_t str_final_len = MIN(str_len, str_len + coords->x);
-    if (str_final_len <= 0) {
-        return;
-    }
+    screen_wprintf(screen, coords, L"%s", buffer);
+}
 
-    final_coords.x = MAX((int) 0, coords->x);
-    final_coords.y = coords->y;
 
-    size_t str_offset = str_len - str_final_len;
-
-    strncpy(
-        screen->next_values + VAL_INDEX(size, final_coords.y, final_coords.x),
-        buffer + str_offset,
-        MIN((int) str_final_len, (int) size->cols - final_coords.x)
-    );
-};
+void screen_wprintf(
+    Screen * screen,
+    ScreenCoordinates const * coords,
+    wchar_t const * format,
+    ...
+) {
+    va_list args;
+    va_start(args, format);
+    screen_vwprintf(screen, coords, format, args);
+    va_end(args);
+}
 
 
 void screen_printf(
@@ -145,14 +206,14 @@ void screen_printf(
     char const * format,
     ...
 ) {
-    va_list props;
-    va_start(props, format);
-    screen_vprintf(screen, coords, format, props);
-    va_end(props);
-};
+    va_list args;
+    va_start(args, format);
+    screen_vprintf(screen, coords, format, args);
+    va_end(args);
+}
 
 
-inline ScreenSize const * screen_get_size(Screen const *screen) {
+inline ScreenSize const * screen_get_size(Screen const * screen) {
     return &screen->size;
 };
 
@@ -162,101 +223,98 @@ inline ScreenSize const * screen_get_size(Screen const *screen) {
 //------------------------------------------------------------------------------
 
 
-void screen_init(Screen * screen, FILE * out, ScreenSize const * size) {
-    screen->out = out;
-    screen->has_render = FALSE;
-
-    screen->size.rows = MIN(SCREEN_MAX_ROWS, size->rows);
-    screen->size.cols = MIN(SCREEN_MAX_COLS, size->cols);
-    size_t len = screen->size.rows * screen->size.cols;
-
-    screen->next_values = XRE_ALLOC(char, len + 1);
-    XRE_ASSERT_ALLOC(screen->next_values);
-
-    screen->last_values = XRE_ALLOC(char, len + 1);
-    XRE_ASSERT_ALLOC(screen->next_values);
-
-    screen_clear_next_values(screen);
-    screen_clear_last_values(screen);
-};
+inline void screen_initialize(Screen * screen) {
+    buffer_clear(screen->next_values, &screen->size);
+    buffer_clear(screen->last_values, &screen->size);
+    screen->has_change = TRUE;
+}
 
 
-inline void screen_clean_up(Screen *screen) {
-    screen_clear_next_values(screen);
+void screen_rerender(Screen * screen) {
+    fwprintf(screen->out, L"\033[G\033[%zuA\033[G", screen->size.rows -1);
+    for (size_t i = 0; i < screen->size.rows; i++) {
+        wchar_t * const line = screen_get_next_row_at(screen, i);
+        wchar_t * const last_line = screen_get_last_row_at(screen, i);
 
-    XRE_FREE(screen->next_values);
-    XRE_FREE(screen->last_values);
-};
-
-
-inline void screen_render_line(Screen * screen, size_t row_index) {
-    ScreenSize const * size = screen_get_size(screen);
-    fprintf(screen->out, "║");
-    fwrite(
-        screen->next_values + VAL_INDEX(size, row_index, 0),
-        sizeof(char),
-        size->cols,
-        screen->out
-    );
-    fprintf(screen->out, "║\n");
-    fprintf(screen->out, "\033[G");
-};
-
-
-inline void screen_render_header(Screen * screen) {
-    ScreenSize const * size = screen_get_size(screen);
-
-    fprintf(screen->out, "\033[G");
-    fprintf(screen->out, "╔");
-    for (size_t i = 0; i < size->cols; i++) {
-        fprintf(screen->out, "═");
+        if (wcsncmp(line, last_line, screen->size.cols) != 0) {
+            fwprintf(screen->out, L"%.*ls", (int)screen->size.cols, line);
+        }
+        fwprintf(screen->out, L"\033[G\033[B");
     }
-    fprintf(screen->out, "╗\n");
-    fprintf(screen->out, "\033[G");
-};
-inline void remove_header(void) {
-    remove_last_line();
-};
+
+    fflush(screen->out);
+}
 
 
-inline void screen_render_footer(Screen * screen) {
-    ScreenSize const * size = screen_get_size(screen);
-
-    fprintf(screen->out, "╚");
-    for (size_t i = 0; i < size->cols; i++) {
-        fprintf(screen->out, "═");
+void screen_render_new(Screen * screen) {
+    for (size_t i = 0; i < screen->size.rows; ++i) {
+        if (i > 0) {
+            fwprintf(screen->out, L"\n\r");
+        }
+        wchar_t * const line = screen_get_next_row_at(screen, i);
+        fwprintf(screen->out, L"%.*ls", (int)screen->size.cols, line);
     }
-    fprintf(screen->out, "╝");
-    fprintf(screen->out, "\033[G");
-};
-inline void remove_footer(void) {
-    remove_current_line();
-};
+    fwprintf(screen->out, L"\033[G");
+    fflush(screen->out);
+}
 
 
-void screen_clear_next_values(Screen *screen) {
-    ScreenSize const * size = screen_get_size(screen);
-    size_t len = VAL_INDEX(size, size->rows, 0);
+inline void screen_update_last_values(Screen * screen) {
+    wchar_t * swap_value = screen->last_values;
+    screen->last_values = screen->next_values;
+    screen->next_values = swap_value;
 
-    memset(screen->next_values, ' ', len);
-    *(screen->next_values + len) = '\0';
-};
+    buffer_clear(screen->next_values, &screen->size);
+    screen->has_change = FALSE;
+}
 
 
-void screen_clear_last_values(Screen *screen) {
-    ScreenSize const * size = screen_get_size(screen);
-    size_t len = VAL_INDEX(size, size->rows, 0);
+inline wchar_t * screen_get_next_row_at(Screen * screen, size_t row_index) {
+    return buffer_get_line(screen->next_values, &screen->size, row_index);
+}
 
-    memset(screen->last_values, ' ', len);
-    *(screen->last_values + len) = '\0';
-};
+
+inline wchar_t * screen_get_last_row_at(Screen * screen, size_t row_index) {
+    return buffer_get_line(screen->last_values, &screen->size, row_index);
+}
+
+
+inline size_t buffer_get_len(ScreenSize const * size) {
+    return size->rows * size->cols;
+}
+
+
+inline void buffer_clear(wchar_t * buffer, ScreenSize const * size) {
+    size_t const size_ = buffer_get_len(size);
+    wmemset(buffer, L' ', size_);
+}
+
+
+inline wchar_t * buffer_get_line(
+    wchar_t * buffer,
+    ScreenSize const * size,
+    size_t row_index
+) {
+    return buffer + row_index * size->cols;
+}
+
+
+inline void buffer_set_line(
+    wchar_t * buffer,
+    ScreenSize const * size,
+    size_t line,
+    wchar_t const * values
+) {
+    wchar_t * const line_ = buffer_get_line(buffer, size, line);
+    wcsncpy(line_, values, size->cols);
+}
 
 
 inline void remove_last_line(void) {
-    printf("\033[A\033[K");
+    wprintf(L"\033[A\033[K");
 };
 
 
 inline void remove_current_line(void) {
-    printf("\033[K");
+    wprintf(L"\033[K");
 };
