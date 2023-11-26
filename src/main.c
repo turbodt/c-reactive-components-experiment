@@ -1,3 +1,4 @@
+#include <locale.h>
 #include <stdarg.h>
 #include <stdlib.h>
 #include <stdio.h>
@@ -25,6 +26,7 @@ struct Box {
 
 static Screen * screen = NULL;
 static void screen_init(struct ScreenSize const * screen_size) {
+    setlocale(LC_ALL, "");
     screen = screen_alloc(stdout, screen_size);
 }
 static void screen_clean_up(void) {
@@ -36,52 +38,44 @@ static void screen_clean_up(void) {
 //------------------------------------------------------------------------------
 
 
-void draw_box(struct Box const *box, char bg, char has_border) {
-    ScreenCoordinates coords = {0,0};
+void draw_box(struct Box const *box, wchar_t bg, int has_border) {
+    has_border = has_border ? 1 : 0;
+
+    size_t line_len = box->width + 2 * has_border;
+
+    wchar_t line[line_len + 1];
+    line[line_len] = L'\0';
+    ScreenCoordinates coords = {
+        box->x -1 * has_border,
+        box->y -1 * has_border
+    };
+
+    wmemset(line, bg, line_len);
+    if (has_border) {
+        line[0] = L'║';
+        line[line_len - 1] = L'║';
+    }
 
     for (int i = 0; i < (int) box->height; i++) {
-        for (int j = 0; j < (int) box->width; j++) {
-            coords.x = box->x + j;
-            coords.y = box->y + i;
-            screen_printf(screen, &coords, "%c", bg);
-        }
+        coords.y = box->y + i;
+        screen_wprintf(screen, &coords, line);
     }
 
     if (!has_border) {
         return;
     }
 
-    for (int j = 0; j < (int) box->width; j++) {
-        coords.x = box->x + j;
-        coords.y = box->y - 1;
-        screen_printf(screen, &coords, "-");
-        coords.y = box->y + (int) box->height;
-        screen_printf(screen, &coords, "-");
-    }
+    wmemset(line, L'═', line_len);
 
-    for (int i = 0; i < (int) box->height; i++) {
-        coords.x = box->x -1;
-        coords.y = box->y +i;
-        screen_printf(screen, &coords, "|");
-        coords.x = box->x + (int) box->width;
-        screen_printf(screen, &coords, "|");
-    }
-
-    coords.x = box->x - 1;
+    line[0] = L'╔';
+    line[line_len - 1] = L'╗';
     coords.y = box->y - 1;
-    screen_printf(screen, &coords, ".");
+    screen_wprintf(screen, &coords, line);
 
-    coords.x = box->x - 1;
-    coords.y = box->y + (int) box->height;
-    screen_printf(screen, &coords, "'");
-
-    coords.x = box->x + (int) box->width;
-    coords.y = box->y - 1;
-    screen_printf(screen, &coords, ".");
-
-    coords.x = box->x + (int) box->width;
-    coords.y = box->y + (int) box->height;
-    screen_printf(screen, &coords, "'");
+    line[0] = L'╚';
+    line[line_len - 1] = L'╝';
+    coords.y = box->y + box->height;
+    screen_wprintf(screen, &coords, line);
 };
 
 
@@ -272,7 +266,7 @@ void box_screen_component(struct XREContext * ctx, va_list props) {
         xre_state_set_double(pos_x_state, pos_x);
     }
 
-    draw_box(&box, 'X', 0);
+    draw_box(&box, L'░', 0);
 
     text_coords.y = screen_size->rows -2;
     screen_printf(screen, &text_coords, "Use h, j, k, l to move");
@@ -336,19 +330,19 @@ void draw_transition(char const * title) {
 
     ScreenSize const * screen_size = screen_get_size(screen);
     struct Box box = {
-        .x = 0,
+        .x = screen_size->cols / 4,
         .y = screen_size->rows / 2 - 2,
-        .width = screen_size->cols,
+        .width = screen_size->cols / 2,
         .height = 5
     };
 
-    draw_box(&box, ' ', 1);
+    draw_box(&box, L' ', 1);
 
     ScreenCoordinates text_coords = {
         (screen_size->cols - title_len) / 2,
         screen_size->rows/2
     };
-    screen_printf(screen, &text_coords, title);
+    screen_printf(screen, &text_coords, "%s", title);
 }
 
 
@@ -385,22 +379,22 @@ void timer_screen_component(struct XREContext * ctx, va_list props) {
     } else if (pressed_key != EOF) {
         timer_set(timer, 5.0);
     } else {
-        text_coords.y = 7;
+        text_coords.y = 9;
         screen_printf(screen, &text_coords, "Press any key");
     }
 
     double progress = timer_get_progress(timer);
-    struct Box pbar_box = {(screen_size->cols - 10) / 2, 5, 10, 1};
-    draw_box(&pbar_box, '-', 0);
+    struct Box pbar_box = {(screen_size->cols - 14) / 2, 6, 10, 1};
+    draw_box(&pbar_box, L'░', 1);
     for (size_t i = 0; i < pbar_box.width; i++) {
         if (i >= progress * (double) pbar_box.width) {
             continue;
         }
         ScreenCoordinates char_coords = {pbar_box.x + i, pbar_box.y};
-        screen_printf(screen, &char_coords, "X");
+        screen_wprintf(screen, &char_coords, L"█");
     }
     text_coords.y = pbar_box.y;
-    text_coords.x = pbar_box.x + pbar_box.width + 1;
+    text_coords.x = pbar_box.x + pbar_box.width + 2;
     screen_printf(screen, &text_coords, "%d%%", (int)(100*progress));
 }
 
@@ -452,6 +446,12 @@ void app(struct XREContext * ctx, va_list props) {
         xre_state_set_int(child_index_state, child_index);
     }
 
+    draw_box(
+        &(struct Box){1,1, screen_size->cols - 2, screen_size->rows - 2},
+        L' ',
+        1
+    );
+
     xre_use_ikey(child_index, children[child_index], ctx);
     if (timer_is_running(timer)) {
         draw_transition(children_titles[child_index]);
@@ -461,7 +461,7 @@ void app(struct XREContext * ctx, va_list props) {
     text_coords.y = screen_size->rows -1;
     screen_printf(screen, &text_coords, "Press <ESC> to terminate.");
 
-    text_coords.x = screen_size->cols - 37;
+    text_coords.x = screen_size->cols - 38;
     text_coords.y = screen_size->rows -1;
     screen_printf(screen, &text_coords, "Press 'p', 'n' to move among screens.");
 
@@ -481,8 +481,8 @@ int main(void) {
     double const SPF = 0.016;
     struct TerminalSize terminal_size = get_terminal_size();
     struct ScreenSize const screen_size = {
-        .rows=terminal_size.rows / 2,
-        .cols=terminal_size.cols - 2
+        .rows=terminal_size.rows,
+        .cols=terminal_size.cols
     };
 
     kb_init();
