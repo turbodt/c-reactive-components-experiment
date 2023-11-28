@@ -183,7 +183,8 @@ inline int timer_is_running(struct Timer const *timer) {
 };
 
 struct Timer * use_timer(struct XREContext *ctx) {
-    return (struct Timer *) xre_use_ref(ctx, timer_alloc, free);
+    struct XRERef * timer_ref = xre_use_ref(ctx, timer_alloc, free);
+    return xre_ref_get(timer_ref);
 }
 
 

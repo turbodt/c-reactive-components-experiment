@@ -2,7 +2,7 @@
 #define XRE_USE_H
 
 
-#include "./context.h"
+#include "./context/main.h"
 
 
 void xre_use_root(Component, struct XREContext *, ...);

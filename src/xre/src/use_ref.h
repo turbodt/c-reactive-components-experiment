@@ -2,23 +2,51 @@
 #define XRE_USE_REF_H
 
 
-#include "./context.h"
+#include "./context/main.h"
 
 
-void * xre_use_vref(
+struct XRERef;
+
+
+typedef void * (*XRERefConstructor)(va_list);
+typedef void (*XRERefDestructor)(void *);
+typedef void (*XRERefAssignator)(void *, void const *);
+typedef int (*XRERefComparator)(void const *, void const *); // TODO int -> XRE_BOOL
+
+
+struct XRERef * xre_use_vref(
     struct XREContext *,
-    void *(*)(va_list),
-    void (*)(void *),
+    XRERefConstructor,
+    XRERefDestructor,
+    XRERefAssignator,
+    XRERefComparator,
     va_list
 );
 
 
-void * xre_use_ref(
+struct XRERef * xre_use_ref(
     struct XREContext *,
-    void *(*)(va_list),
-    void (*)(void *),
+    XRERefConstructor,
+    XRERefDestructor,
     ...
 );
+
+
+struct XRERef * xre_use_ref_ex(
+    struct XREContext *,
+    XRERefConstructor,
+    XRERefDestructor,
+    XRERefAssignator,
+    XRERefComparator,
+    ...
+);
+
+
+void const * xre_ref_get_const(struct XRERef const *);
+void * xre_ref_get(struct XRERef *);
+void xre_ref_set(struct XRERef *, void *);
+int xre_ref_cmp(struct XRERef const *, void const *); // TODO int -> XRE_BOOL
+int xre_ref_has_changed(struct XRERef const *); // TODO int -> XRE_BOOL
 
 
 #endif
