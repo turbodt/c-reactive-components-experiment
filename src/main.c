@@ -247,6 +247,8 @@ void box_screen_component(struct XREContext * ctx, va_list props) {
     double pos_x = xre_state_get_double(pos_x_state);
     struct XREStateDouble * pos_y_state = xre_use_double(ctx, 4.0);
     double pos_y = xre_state_get_double(pos_y_state);
+    struct XREStateInt * pos_x_change_counter_state = xre_use_int(ctx, 0);
+    int pos_x_change_counter = xre_state_get_int(pos_x_change_counter_state);
 
     struct Box box = {(int) pos_x, (int) pos_y, 4, 2};
     ScreenSize const * screen_size = screen_get_size(screen);
@@ -267,8 +269,15 @@ void box_screen_component(struct XREContext * ctx, va_list props) {
         xre_state_set_double(pos_x_state, pos_x);
     }
 
+    if (xre_state_double_has_changed(pos_x_state)) {
+        pos_x_change_counter++;
+        xre_state_set_int(pos_x_change_counter_state, pos_x_change_counter);
+    }
+
     draw_box(&box, L'░', 0);
 
+    text_coords.y = screen_size->rows -3;
+    screen_printf(screen, &text_coords, "X-Pos has changed %d times.", pos_x_change_counter);
     text_coords.y = screen_size->rows -2;
     screen_printf(screen, &text_coords, "Use h, j, k, l to move");
 };

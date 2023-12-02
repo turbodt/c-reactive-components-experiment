@@ -164,6 +164,7 @@ struct XRERef * xre_ref_alloc(
     ref->comparator = comparator;
     ref->value = NULL;
     ref->state = NULL;
+    ref->has_changed = 0;
 
     ref->value = constructor(constructor_args); // TODO: use xre_ref_set instead?
 
