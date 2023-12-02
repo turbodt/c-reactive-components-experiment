@@ -12,25 +12,25 @@
 #define XRE_USE_X_FACTORY_IMPL_EX(type, struct_type, promoted_type, name, clean_up, assignator, comparator) \
 \
 struct struct_type { \
-    type value; \
-    struct XRERef * ref; \
+    struct XRERef base; \
 }; \
  \
  \
 static void * xre_##name##_state_alloc(va_list args) { \
-    struct struct_type * state = XRE_ALLOC(struct struct_type, 1); \
-    XRE_ASSERT_ALLOC(state); \
+    type * value = XRE_ALLOC(type, 1); \
+    XRE_ASSERT_ALLOC(value); \
     type new_value = (type) va_arg(args, promoted_type); \
-    assignator(&state->value, &new_value); \
-    return &state->value; \
+    assignator(value, &new_value); \
+    return value; \
 }; \
  \
  \
-static void xre_##name##_state_destroy(void *state) { \
+static void xre_##name##_state_destroy(void *value) { \
     if (!IS_NULL(clean_up)) { \
-        clean_up(state); \
-    } \
-    XRE_FREE(state); \
+        clean_up(value); \
+    } else { \
+        XRE_FREE(value); \
+    }\
 }; \
  \
  \
@@ -43,24 +43,22 @@ struct struct_type * xre_use_##name(struct XREContext * ctx, type initial_value)
         comparator, \
         initial_value \
     ); \
-    struct struct_type * state = (struct struct_type *) xre_ref_get(ref); \
-    state->ref = ref; \
-    return state; \
+    return (struct struct_type *) ref; \
 }; \
  \
  \
 inline type xre_state_get_##name(struct struct_type *state) { \
-    return *((type *) xre_ref_get(state->ref)); \
+    return *((type *) xre_ref_get((struct XRERef *)state)); \
 }; \
  \
  \
 inline void xre_state_set_##name(struct struct_type *state, type value) { \
-    xre_ref_set(state->ref, &value); \
+    xre_ref_set((struct XRERef *)state, &value); \
 } \
  \
  \
 inline XRE_BOOL xre_state_##name##_has_changed(struct struct_type const *state) { \
-    return xre_ref_has_changed(state->ref); \
+    return xre_ref_has_changed((struct XRERef *)state); \
 }
 
 

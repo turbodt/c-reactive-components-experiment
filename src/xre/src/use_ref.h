@@ -14,6 +14,16 @@ typedef void (*XRERefAssignator)(void *, void const *);
 typedef int (*XRERefComparator)(void const *, void const *); // TODO int -> XRE_BOOL
 
 
+struct XRERef {
+    struct XREContextState * state;
+    XRERefDestructor destructor;
+    XRERefAssignator assignator;
+    XRERefComparator comparator;
+    void * value;
+    int has_changed; // TODO int -> XRE_BOOL
+};
+
+
 struct XRERef * xre_use_vref(
     struct XREContext *,
     XRERefConstructor,

@@ -3,16 +3,6 @@
 #include "./base.h"
 
 
-struct XRERef {
-    struct XREContextState * state;
-    XRERefDestructor destructor;
-    XRERefAssignator assignator;
-    XRERefComparator comparator;
-    void * value;
-    XRE_BOOL has_changed;
-};
-
-
 #define TO_REF_PRIVATE(ref) ref
 #define TO_REF_PUBLIC(ref) ref
 
