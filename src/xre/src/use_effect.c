@@ -27,6 +27,7 @@ struct XREEffectRef * xre_use_veffect(
     XRE_BOOL has_changed = FALSE;
     while (has_changed == FALSE && !IS_NULL(dependencies[index])) {
         has_changed = xre_ref_has_changed(dependencies[index]);
+        index++;
     }
 
     if (has_changed) {

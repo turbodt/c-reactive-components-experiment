@@ -25,6 +25,7 @@ LDFLAGS = $(LOCAL_LIBRARIES) $(EXTERNAL_LIBRARIES)
 SRC = $(SRC_DIR)/main.c \
 			$(SRC_DIR)/use_time.c \
 			$(SRC_DIR)/use_timespec.c \
+			$(SRC_DIR)/use_str.c \
 			$(SRC_DIR)/msleep.c \
 			$(SRC_DIR)/screen.c \
 			\

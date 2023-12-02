@@ -9,36 +9,18 @@
 #include <stdarg.h>
 
 
-#define XRE_USE_X_FACTORY_IMPL_EX(type, struct_type, promoted_type, name, clean_up, assignator, comparator) \
+#define XRE_USE_X_FACTORY_IMPL_EX(type, struct_type, promoted_type, name, constructor, destructor, assignator, comparator) \
 \
 struct struct_type { \
     struct XRERef base; \
 }; \
  \
  \
-static void * xre_##name##_state_alloc(va_list args) { \
-    type * value = XRE_ALLOC(type, 1); \
-    XRE_ASSERT_ALLOC(value); \
-    type new_value = (type) va_arg(args, promoted_type); \
-    assignator(value, &new_value); \
-    return value; \
-}; \
- \
- \
-static void xre_##name##_state_destroy(void *value) { \
-    if (!IS_NULL(clean_up)) { \
-        clean_up(value); \
-    } else { \
-        XRE_FREE(value); \
-    }\
-}; \
- \
- \
 struct struct_type * xre_use_##name(struct XREContext * ctx, type initial_value) { \
     struct XRERef * ref = xre_use_ref_ex( \
         ctx, \
-        xre_##name##_state_alloc, \
-        xre_##name##_state_destroy, \
+        constructor, \
+        destructor, \
         assignator, \
         comparator, \
         initial_value \
@@ -75,6 +57,29 @@ static inline XRE_BOOL xre_##name##_comparator(void const * dst, void const * sr
 }; \
  \
  \
-  XRE_USE_X_FACTORY_IMPL_EX(type, struct_type, promoted_type, name, ((void(*)(void *))NULL), xre_##name##_assignator, xre_##name##_comparator)
+static void * xre_##name##_constructor(va_list args) { \
+    type * value = XRE_ALLOC(type, 1); \
+    XRE_ASSERT_ALLOC(value); \
+    type new_value = (type) va_arg(args, promoted_type); \
+    xre_##name##_assignator(value, &new_value); \
+    return value; \
+}; \
+ \
+ \
+static void xre_##name##_destructor(void *value) { \
+    XRE_FREE(value); \
+}; \
+ \
+ \
+  XRE_USE_X_FACTORY_IMPL_EX( \
+    type, \
+    struct_type, \
+    promoted_type, \
+    name, \
+    xre_##name##_constructor, \
+    xre_##name##_destructor, \
+    xre_##name##_assignator, \
+    xre_##name##_comparator \
+  )
 
 #endif

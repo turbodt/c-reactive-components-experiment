@@ -1,7 +1,10 @@
 #include "./use_timespec.h"
 #include "xre/impl.h"
+#include <stdlib.h>
+#include <stdarg.h>
 
 
+static void * alloc(va_list);
 static void assign(void *, void const *);
 static int compare(struct timespec const *, struct timespec const *);
 
@@ -11,10 +14,19 @@ XRE_USE_X_FACTORY_IMPL_EX(
     StateTimeSpec,
     struct timespec,
     timespec,
-    ((void(*)(void *))NULL),
+    alloc,
+    free,
     ((void(*)(void *, void const *)) assign),
     ((int(*)(void const *, void const *))compare)
 );
+
+
+inline void * alloc(va_list args) {
+    struct timespec * value = malloc(sizeof(struct timespec));
+    struct timespec new_value = (struct timespec) va_arg(args, struct timespec);
+    assign(value, &new_value);
+    return value;
+};
 
 
 inline void assign(void *dst, void const * src) {
