@@ -247,10 +247,14 @@ void box_screen_component(struct XREContext * ctx, va_list props) {
     double pos_x = xre_state_get_double(pos_x_state);
     struct XREStateDouble * pos_y_state = xre_use_double(ctx, 4.0);
     double pos_y = xre_state_get_double(pos_y_state);
+    struct XREStateSize * size_width_state = xre_use_size(ctx, 4);
+    size_t size_width = xre_state_get_size(size_width_state);
+    struct XREStateSize * size_height_state = xre_use_size(ctx, 2);
+    size_t size_height = xre_state_get_size(size_height_state);
     struct XREStateInt * pos_x_change_counter_state = xre_use_int(ctx, 0);
     int pos_x_change_counter = xre_state_get_int(pos_x_change_counter_state);
 
-    struct Box box = {(int) pos_x, (int) pos_y, 4, 2};
+    struct Box box = {(int) pos_x, (int) pos_y, size_width, size_height};
     ScreenSize const * screen_size = screen_get_size(screen);
 
     ScreenCoordinates text_coords = {0, 0};
@@ -267,6 +271,18 @@ void box_screen_component(struct XREContext * ctx, va_list props) {
     } else if (pressed_key == 'l' && box.x + box.width < screen_size->cols) {
         pos_x += x_delta;
         xre_state_set_double(pos_x_state, pos_x);
+    } else if (pressed_key == 'K' && box.height > 1) {
+        size_height--;
+        xre_state_set_size(size_height_state, size_height);
+    } else if (pressed_key == 'J' && box.y + box.height < screen_size->rows) {
+        size_height++;
+        xre_state_set_size(size_height_state, size_height);
+    } else if (pressed_key == 'H' && box.width > 1) {
+        size_width--;
+        xre_state_set_size(size_width_state, size_width);
+    } else if (pressed_key == 'L' && box.x + box.width < screen_size->cols) {
+        size_width++;
+        xre_state_set_size(size_width_state, size_width);
     }
 
     if (xre_state_double_has_changed(pos_x_state)) {
@@ -276,10 +292,12 @@ void box_screen_component(struct XREContext * ctx, va_list props) {
 
     draw_box(&box, L'░', 0);
 
-    text_coords.y = screen_size->rows -3;
+    text_coords.y = screen_size->rows -4;
     screen_printf(screen, &text_coords, "X-Pos has changed %d times.", pos_x_change_counter);
+    text_coords.y = screen_size->rows -3;
+    screen_printf(screen, &text_coords, "Use h, j, k, l to move.");
     text_coords.y = screen_size->rows -2;
-    screen_printf(screen, &text_coords, "Use h, j, k, l to move");
+    screen_printf(screen, &text_coords, "Use H, J, K, L to change size.");
 };
 
 
