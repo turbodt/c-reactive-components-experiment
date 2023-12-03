@@ -417,10 +417,18 @@ void color_selector_screen_component(struct XREContext * ctx, va_list props) {
         xre_state_set_int(selected_index_state, selected_index);
     }
 
+
+    struct XRERef const * const effect_deps[] = {
+        &red_state->ref,
+        &green_state->ref,
+        &blue_state->ref,
+        NULL
+    };
+
     xre_use_effect(
         ctx,
         color_selection_effect,
-        (struct XRERef const * const *){red_state, green_state, blue_state, NULL},
+        effect_deps,
         red_state,
         green_state,
         blue_state,
