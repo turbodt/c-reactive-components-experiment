@@ -3,10 +3,14 @@
 
 
 #include "../context/main.h"
+#include "../use_ref.h"
 
 
 #define XRE_USE_X_FACTORY_H(type, struct_type, name) \
-struct struct_type; \
+struct struct_type { \
+    struct XRERef ref; \
+}; \
+ \
  \
 struct struct_type * xre_use_##name(struct XREContext *, type); \
 type xre_state_get_##name(struct struct_type *); \

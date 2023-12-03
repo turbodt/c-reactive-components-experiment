@@ -11,7 +11,6 @@
 #include "./screen.h"
 #include "./use_time.h"
 #include "./use_timespec.h"
-#include "./use_str.h"
 
 
 struct Box {
@@ -359,7 +358,7 @@ void color_selection_effect(va_list args) {
     struct XREStateInt * red_state = va_arg(args, struct XREStateInt *);
     struct XREStateInt * green_state = va_arg(args, struct XREStateInt *);
     struct XREStateInt * blue_state = va_arg(args, struct XREStateInt *);
-    struct StateStr * text_state = va_arg(args, struct StateStr *);
+    struct XREStateString * text_state = va_arg(args, struct XREStateString *);
 
     int red_value = xre_state_get_int(red_state);
     int green_value = xre_state_get_int(green_state);
@@ -367,7 +366,7 @@ void color_selection_effect(va_list args) {
 
     char text[20];
     snprintf(text, 19, text_template, red_value, green_value, blue_value);
-    xre_state_set_str(text_state, text);
+    xre_state_set_string(text_state, text);
 };
 
 
@@ -387,7 +386,7 @@ void color_selector_screen_component(struct XREContext * ctx, va_list props) {
     struct XREStateInt * selected_index_state = xre_use_int(ctx, 0);
     int selected_index = xre_state_get_int(selected_index_state);
 
-    struct StateStr * text_state = xre_use_str(ctx, "????");
+    struct XREStateString * text_state = xre_use_string(ctx, "????");
 
     int pressed_key = use_pressed_key(ctx);
 
@@ -454,7 +453,7 @@ void color_selector_screen_component(struct XREContext * ctx, va_list props) {
     box.y = 4 + bar_height - box.height;
     draw_box(&box, L'█', 0);
 
-    char const * text = xre_state_get_str(text_state);
+    char const * text = xre_state_get_string(text_state);
     ScreenCoordinates text_coords = {(screen_size->cols - strlen(text))/2, 2};
     text_coords.x = (screen_size->cols - strlen(text))/2;
     text_coords.y = 2;

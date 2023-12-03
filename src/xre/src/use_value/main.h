@@ -4,6 +4,7 @@
 
 #include "./use_x_factory.h"
 #include "./use_main_type.h"
+#include "./use_string.h"
 
 
 #endif

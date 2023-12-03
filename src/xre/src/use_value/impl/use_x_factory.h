@@ -11,11 +11,6 @@
 
 #define XRE_USE_X_FACTORY_IMPL_EX(type, struct_type, promoted_type, name, constructor, destructor, assignator, comparator) \
 \
-struct struct_type { \
-    struct XRERef base; \
-}; \
- \
- \
 struct struct_type * xre_use_##name(struct XREContext * ctx, type initial_value) { \
     struct XRERef * ref = xre_use_ref_ex( \
         ctx, \
