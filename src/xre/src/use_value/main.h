@@ -3,15 +3,7 @@
 
 
 #include "./use_x_factory.h"
-#include "../context.h"
+#include "./use_main_type.h"
 
-
-struct XREState;
-
-
-XRE_USE_X_FACTORY_H(char, XREStateChar, char)
-XRE_USE_X_FACTORY_H(int, XREStateInt, int)
-XRE_USE_X_FACTORY_H(double, XREStateDouble, double)
-XRE_USE_X_FACTORY_H(float, XREStateFloat, float)
 
 #endif

@@ -7,12 +7,12 @@
 
 struct XREContextState;
 
-struct XREContextState * xre_context_state_alloc(void *, void (*)(void *));
-void xre_context_state_destroy(struct XREContextState *);
+
+typedef void (*XREContextStateOnDestroy)(struct XREContextState *);
 
 
+void const * xre_context_state_get_const(struct XREContextState const *);
 void * xre_context_state_get(struct XREContextState *);
 void xre_context_state_set(struct XREContextState *, void *);
-
 
 #endif

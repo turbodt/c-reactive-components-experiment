@@ -1,6 +1,5 @@
 #include "./use.h"
-#include "./context_protected.h"
-#include "./context_hierarchy_protected.h"
+#include "./context/main.h"
 #include "./base.h"
 #include <stdio.h>
 
@@ -18,17 +17,16 @@ void xre_vuse(
     va_list props
 ) {
 
-    ContextPrivate * pctx = TO_CONTEXT_PRIV(parent_context);
 
-    ContextPrivate * ctx = xre_context_children_get(pctx, key);
+    struct XREContext * ctx = xre_context_children_get(parent_context, key);
     if (IS_NULL(ctx)) {
-        ctx = TO_CONTEXT_PRIV(xre_context_alloc(key, component));
-        xre_context_children_add(pctx, ctx);
+        ctx = xre_context_alloc(key, component);
+        xre_context_children_add(parent_context, ctx);
     }
 
-    ctx->states_index = 0;
+    xre_context_state_reset_index(ctx);
 
-    component_call(TO_CONTEXT_PUB(ctx), component, props);
+    component_call(ctx, component, props);
 };
 
 
@@ -67,9 +65,7 @@ void xre_vuse_root(
     struct XREContext *parent_context,
     va_list props
 ) {
-    ContextPrivate * pctx = TO_CONTEXT_PRIV(parent_context);
-
-    pctx->states_index = 0;
+    xre_context_state_reset_index(parent_context);
 
     xre_vuse(XRE_ROOT_KEY, component, parent_context, props);
 };
