@@ -14,7 +14,7 @@ static void xre_effect_destructor(void *);
 struct XREEffectRef * xre_use_veffect(
     struct XREContext *ctx,
     XREEffect effect,
-    struct XRERef const * const dependencies[],
+    struct XRERef const * const * dependencies,
     va_list effect_args
 ) {
     struct XRERef * ref = xre_use_ref(
@@ -24,7 +24,7 @@ struct XREEffectRef * xre_use_veffect(
     );
 
     size_t index = 0;
-    XRE_BOOL has_changed = FALSE;
+    XRE_BOOL has_changed = IS_NULL(dependencies);
     while (has_changed == FALSE && !IS_NULL(dependencies[index])) {
         has_changed = xre_ref_has_changed(dependencies[index]);
         index++;
@@ -41,7 +41,7 @@ struct XREEffectRef * xre_use_veffect(
 struct XREEffectRef * xre_use_effect(
     struct XREContext *ctx,
     XREEffect effect,
-    struct XRERef const * const dependencies[],
+    struct XRERef const * const * dependencies,
     ...
 ) {
     va_list effect_args;
@@ -64,9 +64,10 @@ struct XREEffectRef * xre_use_effect(
 
 
 inline void * xre_effect_constructor(va_list args) {
+    (void) args;
     return NULL;
 };
 
 inline void xre_effect_destructor(void * value) {
-
+    (void) value;
 };

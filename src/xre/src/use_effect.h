@@ -19,7 +19,7 @@ struct XREEffectRef {
 struct XREEffectRef * xre_use_veffect(
     struct XREContext *,
     XREEffect,
-    struct XRERef const * const [],
+    struct XRERef const * const *,
     va_list
 );
 
@@ -27,7 +27,7 @@ struct XREEffectRef * xre_use_veffect(
 struct XREEffectRef * xre_use_effect(
     struct XREContext *,
     XREEffect,
-    struct XRERef const * const[],
+    struct XRERef const * const *,
     ...
 );
 

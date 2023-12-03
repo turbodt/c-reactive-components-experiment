@@ -420,7 +420,7 @@ void color_selector_screen_component(struct XREContext * ctx, va_list props) {
     xre_use_effect(
         ctx,
         color_selection_effect,
-        (struct XRERef const * const[]){red_state, green_state, blue_state, NULL},
+        (struct XRERef const * const *){red_state, green_state, blue_state, NULL},
         red_state,
         green_state,
         blue_state,
