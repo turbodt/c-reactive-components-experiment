@@ -7,19 +7,19 @@
 #include <stdarg.h>
 
 
-typedef void (*XREEffectCleanUp)(va_list);
-typedef void (*XREEffect)(va_list); // TODO: return clean up
+typedef void (*XREEffectCleanUp)(void);
+typedef XREEffectCleanUp (*XREEffect)(va_list);
 
 
 struct XREEffectRef {
-    struct XRERef base;
+    struct XRERef ref;
 };
 
 
 struct XREEffectRef * xre_use_veffect(
     struct XREContext *,
     XREEffect,
-    struct XRERef const * const *,
+    struct XRERef const * const[],
     va_list
 );
 
@@ -27,7 +27,7 @@ struct XREEffectRef * xre_use_veffect(
 struct XREEffectRef * xre_use_effect(
     struct XREContext *,
     XREEffect,
-    struct XRERef const * const *,
+    struct XRERef const * const[],
     ...
 );
 
