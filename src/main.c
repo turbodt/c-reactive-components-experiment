@@ -352,6 +352,118 @@ void title_screen_component(struct XREContext * ctx, va_list props) {
 //------------------------------------------------------------------------------
 
 
+void color_selection_effect(va_list args) {
+    static char const text_template[] = "RGB(%d, %d, %d)";
+
+    struct XREStateInt * red_state = va_arg(args, struct XREStateInt *);
+    struct XREStateInt * green_state = va_arg(args, struct XREStateInt *);
+    struct XREStateInt * blue_state = va_arg(args, struct XREStateInt *);
+    struct XREStateString * text_state = va_arg(args, struct XREStateString *);
+
+    int red_value = xre_state_get_int(red_state);
+    int green_value = xre_state_get_int(green_state);
+    int blue_value = xre_state_get_int(blue_state);
+
+    char text[20];
+    snprintf(text, 19, text_template, red_value, green_value, blue_value);
+    xre_state_set_string(text_state, text);
+};
+
+
+void color_selector_screen_component(struct XREContext * ctx, va_list props) {
+    (void) props;
+    (void) ctx;
+
+    ScreenSize const * screen_size = screen_get_size(screen);
+    size_t const bar_height = screen_size->rows - 8;
+
+    struct XREStateInt * red_state = xre_use_int(ctx, 0);
+    int red_value = xre_state_get_int(red_state);
+    struct XREStateInt * green_state = xre_use_int(ctx, 0);
+    int green_value = xre_state_get_int(green_state);
+    struct XREStateInt * blue_state = xre_use_int(ctx, 0);
+    int blue_value = xre_state_get_int(blue_state);
+    struct XREStateInt * selected_index_state = xre_use_int(ctx, 0);
+    int selected_index = xre_state_get_int(selected_index_state);
+
+    struct XREStateString * text_state = xre_use_string(ctx, "????");
+
+    int pressed_key = use_pressed_key(ctx);
+
+
+    if (pressed_key == 'k' && selected_index == 0 && red_value < 255) {
+        red_value++;
+        xre_state_set_int(red_state, red_value);
+    } else if (pressed_key == 'k' && selected_index == 1 && green_value < 255) {
+        green_value++;
+        xre_state_set_int(green_state, green_value);
+    } else if (pressed_key == 'k' && selected_index == 2 && blue_value < 255) {
+        blue_value++;
+        xre_state_set_int(blue_state, blue_value);
+    } else if (pressed_key == 'j' && selected_index == 0 && red_value > 0) {
+        red_value--;
+        xre_state_set_int(red_state, red_value);
+    } else if (pressed_key == 'j' && selected_index == 1 && green_value > 0) {
+        green_value--;
+        xre_state_set_int(green_state, green_value);
+    } else if (pressed_key == 'j' && selected_index == 2 && blue_value > 0) {
+        blue_value--;
+        xre_state_set_int(blue_state, blue_value);
+    } else if (pressed_key == 'h' && selected_index > 0) {
+        selected_index--;
+        xre_state_set_int(selected_index_state, selected_index);
+    } else if (pressed_key == 'l' && selected_index < 2) {
+        selected_index++;
+        xre_state_set_int(selected_index_state, selected_index);
+    }
+
+    xre_use_effect(
+        ctx,
+        color_selection_effect,
+        (struct XRERef const * const[]){red_state, green_state, blue_state, NULL},
+        red_state,
+        green_state,
+        blue_state,
+        text_state
+    );
+
+    struct Box box = {screen_size->cols / 4, 4, 1, bar_height};
+
+    box.x = screen_size->cols / 4;
+    box.height = bar_height;
+    box.y = 4;
+    draw_box(&box, selected_index == 0 ? L'+' : L' ', 1);
+    box.height = (size_t)((float)(bar_height*red_value)/255);
+    box.y = 4 + bar_height - box.height;
+    draw_box(&box, L'█', 0);
+
+    box.x = screen_size->cols / 2;
+    box.height = bar_height;
+    box.y = 4;
+    draw_box(&box, selected_index == 1 ? L'+' : L' ', 1);
+    box.height = (size_t)((float)(bar_height*green_value)/255);
+    box.y = 4 + bar_height - box.height;
+    draw_box(&box, L'█', 0);
+
+    box.x = 3*screen_size->cols / 4;
+    box.height = bar_height;
+    box.y = 4;
+    draw_box(&box, selected_index == 2 ? L'+' : L' ', 1);
+    box.height = (size_t)((float)(bar_height*blue_value)/255);
+    box.y = 4 + bar_height - box.height;
+    draw_box(&box, L'█', 0);
+
+    char const * text = xre_state_get_string(text_state);
+    ScreenCoordinates text_coords = {(screen_size->cols - strlen(text))/2, 2};
+    text_coords.x = (screen_size->cols - strlen(text))/2;
+    text_coords.y = 2;
+    screen_printf(screen, &text_coords, "%s", text);
+};
+
+
+//------------------------------------------------------------------------------
+
+
 void draw_transition(char const * title) {
 
     size_t title_len = strlen(title);
@@ -432,15 +544,17 @@ void timer_screen_component(struct XREContext * ctx, va_list props) {
 
 void app(struct XREContext * ctx, va_list props) {
 
-    static size_t const children_count = 4;
+    static size_t const children_count = 5;
     static Component const children[] = {
         title_screen_component,
+        color_selector_screen_component,
         timer_screen_component,
         box_screen_component,
         box_screen_component,
     };
     static char const * children_titles[] = {
         "Title",
+        "Color Selector",
         "Timer",
         "Box 1",
         "Box 2"
