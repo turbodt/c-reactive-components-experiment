@@ -39,12 +39,6 @@ static wchar_t * screen_get_last_row_at(Screen *, size_t);
 static size_t buffer_get_len(ScreenSize const *);
 static void buffer_clear(wchar_t *, ScreenSize const *);
 static wchar_t * buffer_get_line(wchar_t *, ScreenSize const *, size_t);
-static void buffer_set_line(
-    wchar_t *,
-    ScreenSize const *,
-    size_t,
-    wchar_t const *
-);
 static void remove_last_line(void);
 static void remove_current_line(void);
 
@@ -296,17 +290,6 @@ inline wchar_t * buffer_get_line(
     size_t row_index
 ) {
     return buffer + row_index * size->cols;
-}
-
-
-inline void buffer_set_line(
-    wchar_t * buffer,
-    ScreenSize const * size,
-    size_t line,
-    wchar_t const * values
-) {
-    wchar_t * const line_ = buffer_get_line(buffer, size, line);
-    wcsncpy(line_, values, size->cols);
 }
 
 
