@@ -2,8 +2,8 @@
 #define XRE_USE_VALUE_USE_STRING_H
 
 
-#import "../context/main.h"
-#import "../use_ref.h"
+#include "../context/main.h"
+#include "../use_ref.h"
 
 
 struct XREStateString {
