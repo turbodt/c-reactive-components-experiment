@@ -1,8 +1,9 @@
-#ifndef XRE_CONTEXT_PRIVATE_H
-#define XRE_CONTEXT_PRIVATE_H
+#ifndef XRE_CONTEXT_PROTECTED_H
+#define XRE_CONTEXT_PROTECTED_H
 
 
-#include "./context.h"
+#include "../context.h"
+#include "../state.h"
 #include <uthash.h>
 
 
@@ -14,8 +15,8 @@ struct ContextPrivate {
     struct ContextPrivate *children;
 
     size_t states_index;
-    size_t states_size;
-    struct XREContextState **states;
+    size_t states_count;
+    struct XREContextState *states;
     Component component;
 
     UT_hash_handle hh;

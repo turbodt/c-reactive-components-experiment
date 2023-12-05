@@ -183,7 +183,8 @@ inline int timer_is_running(struct Timer const *timer) {
 };
 
 struct Timer * use_timer(struct XREContext *ctx) {
-    return (struct Timer *) xre_use_ref(ctx, timer_alloc, free);
+    struct XRERef * timer_ref = xre_use_ref(ctx, timer_alloc, free);
+    return xre_ref_get(timer_ref);
 }
 
 
@@ -246,8 +247,14 @@ void box_screen_component(struct XREContext * ctx, va_list props) {
     double pos_x = xre_state_get_double(pos_x_state);
     struct XREStateDouble * pos_y_state = xre_use_double(ctx, 4.0);
     double pos_y = xre_state_get_double(pos_y_state);
+    struct XREStateSize * size_width_state = xre_use_size(ctx, 4);
+    size_t size_width = xre_state_get_size(size_width_state);
+    struct XREStateSize * size_height_state = xre_use_size(ctx, 2);
+    size_t size_height = xre_state_get_size(size_height_state);
+    struct XREStateInt * pos_x_change_counter_state = xre_use_int(ctx, 0);
+    int pos_x_change_counter = xre_state_get_int(pos_x_change_counter_state);
 
-    struct Box box = {(int) pos_x, (int) pos_y, 4, 2};
+    struct Box box = {(int) pos_x, (int) pos_y, size_width, size_height};
     ScreenSize const * screen_size = screen_get_size(screen);
 
     ScreenCoordinates text_coords = {0, 0};
@@ -264,12 +271,33 @@ void box_screen_component(struct XREContext * ctx, va_list props) {
     } else if (pressed_key == 'l' && box.x + box.width < screen_size->cols) {
         pos_x += x_delta;
         xre_state_set_double(pos_x_state, pos_x);
+    } else if (pressed_key == 'K' && box.height > 1) {
+        size_height--;
+        xre_state_set_size(size_height_state, size_height);
+    } else if (pressed_key == 'J' && box.y + box.height < screen_size->rows) {
+        size_height++;
+        xre_state_set_size(size_height_state, size_height);
+    } else if (pressed_key == 'H' && box.width > 1) {
+        size_width--;
+        xre_state_set_size(size_width_state, size_width);
+    } else if (pressed_key == 'L' && box.x + box.width < screen_size->cols) {
+        size_width++;
+        xre_state_set_size(size_width_state, size_width);
+    }
+
+    if (xre_state_double_has_changed(pos_x_state)) {
+        pos_x_change_counter++;
+        xre_state_set_int(pos_x_change_counter_state, pos_x_change_counter);
     }
 
     draw_box(&box, L'░', 0);
 
+    text_coords.y = screen_size->rows -4;
+    screen_printf(screen, &text_coords, "X-Pos has changed %d times.", pos_x_change_counter);
+    text_coords.y = screen_size->rows -3;
+    screen_printf(screen, &text_coords, "Use h, j, k, l to move.");
     text_coords.y = screen_size->rows -2;
-    screen_printf(screen, &text_coords, "Use h, j, k, l to move");
+    screen_printf(screen, &text_coords, "Use H, J, K, L to change size.");
 };
 
 
@@ -318,6 +346,127 @@ void title_screen_component(struct XREContext * ctx, va_list props) {
         text_coords.y++;
     }
 
+};
+
+
+//------------------------------------------------------------------------------
+
+
+struct XREEffectCleanUp * color_selection_effect(va_list args) {
+    static char const text_template[] = "RGB(%d, %d, %d)";
+
+    struct XREStateInt * red_state = va_arg(args, struct XREStateInt *);
+    struct XREStateInt * green_state = va_arg(args, struct XREStateInt *);
+    struct XREStateInt * blue_state = va_arg(args, struct XREStateInt *);
+    struct XREStateString * text_state = va_arg(args, struct XREStateString *);
+
+    int red_value = xre_state_get_int(red_state);
+    int green_value = xre_state_get_int(green_state);
+    int blue_value = xre_state_get_int(blue_state);
+
+    char text[20];
+    snprintf(text, 19, text_template, red_value, green_value, blue_value);
+    xre_state_set_string(text_state, text);
+    return NULL;
+};
+
+
+void color_selector_screen_component(struct XREContext * ctx, va_list props) {
+    (void) props;
+    (void) ctx;
+
+    ScreenSize const * screen_size = screen_get_size(screen);
+    size_t const bar_height = screen_size->rows - 8;
+
+    struct XREStateInt * red_state = xre_use_int(ctx, 0);
+    int red_value = xre_state_get_int(red_state);
+    struct XREStateInt * green_state = xre_use_int(ctx, 0);
+    int green_value = xre_state_get_int(green_state);
+    struct XREStateInt * blue_state = xre_use_int(ctx, 0);
+    int blue_value = xre_state_get_int(blue_state);
+    struct XREStateInt * selected_index_state = xre_use_int(ctx, 0);
+    int selected_index = xre_state_get_int(selected_index_state);
+
+    struct XREStateString * text_state = xre_use_string(ctx, "????");
+
+    int pressed_key = use_pressed_key(ctx);
+
+
+    if (pressed_key == 'k' && selected_index == 0 && red_value < 255) {
+        red_value++;
+        xre_state_set_int(red_state, red_value);
+    } else if (pressed_key == 'k' && selected_index == 1 && green_value < 255) {
+        green_value++;
+        xre_state_set_int(green_state, green_value);
+    } else if (pressed_key == 'k' && selected_index == 2 && blue_value < 255) {
+        blue_value++;
+        xre_state_set_int(blue_state, blue_value);
+    } else if (pressed_key == 'j' && selected_index == 0 && red_value > 0) {
+        red_value--;
+        xre_state_set_int(red_state, red_value);
+    } else if (pressed_key == 'j' && selected_index == 1 && green_value > 0) {
+        green_value--;
+        xre_state_set_int(green_state, green_value);
+    } else if (pressed_key == 'j' && selected_index == 2 && blue_value > 0) {
+        blue_value--;
+        xre_state_set_int(blue_state, blue_value);
+    } else if (pressed_key == 'h' && selected_index > 0) {
+        selected_index--;
+        xre_state_set_int(selected_index_state, selected_index);
+    } else if (pressed_key == 'l' && selected_index < 2) {
+        selected_index++;
+        xre_state_set_int(selected_index_state, selected_index);
+    }
+
+
+    struct XRERef const * const effect_deps[] = {
+        &red_state->ref,
+        &green_state->ref,
+        &blue_state->ref,
+        NULL
+    };
+
+    xre_use_effect(
+        ctx,
+        color_selection_effect,
+        effect_deps,
+        red_state,
+        green_state,
+        blue_state,
+        text_state
+    );
+
+    struct Box box = {screen_size->cols / 4, 4, 1, bar_height};
+
+    box.x = screen_size->cols / 4;
+    box.height = bar_height;
+    box.y = 4;
+    draw_box(&box, selected_index == 0 ? L'+' : L' ', 1);
+    box.height = (size_t)((float)(bar_height*red_value)/255);
+    box.y = 4 + bar_height - box.height;
+    draw_box(&box, L'█', 0);
+
+    box.x = screen_size->cols / 2;
+    box.height = bar_height;
+    box.y = 4;
+    draw_box(&box, selected_index == 1 ? L'+' : L' ', 1);
+    box.height = (size_t)((float)(bar_height*green_value)/255);
+    box.y = 4 + bar_height - box.height;
+    draw_box(&box, L'█', 0);
+
+    box.x = 3*screen_size->cols / 4;
+    box.height = bar_height;
+    box.y = 4;
+    draw_box(&box, selected_index == 2 ? L'+' : L' ', 1);
+    box.height = (size_t)((float)(bar_height*blue_value)/255);
+    box.y = 4 + bar_height - box.height;
+    draw_box(&box, L'█', 0);
+
+    char const * text = xre_state_get_string(text_state);
+    ScreenCoordinates text_coords = {(screen_size->cols - strlen(text))/2, 2};
+    text_coords.x = (screen_size->cols - strlen(text))/2;
+    text_coords.y = 2;
+    screen_printf(screen, &text_coords, "%s", text);
 };
 
 
@@ -404,15 +553,17 @@ void timer_screen_component(struct XREContext * ctx, va_list props) {
 
 void app(struct XREContext * ctx, va_list props) {
 
-    static size_t const children_count = 4;
+    static size_t const children_count = 5;
     static Component const children[] = {
         title_screen_component,
+        color_selector_screen_component,
         timer_screen_component,
         box_screen_component,
         box_screen_component,
     };
     static char const * children_titles[] = {
         "Title",
+        "Color Selector",
         "Timer",
         "Box 1",
         "Box 2"
