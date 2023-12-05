@@ -7,8 +7,9 @@
 #include <stdarg.h>
 
 
-typedef void (*XREEffectCleanUp)(void);
-typedef XREEffectCleanUp (*XREEffect)(va_list);
+struct XREEffectCleanUp;
+typedef void (*XREEffectCleanUpFunction)(va_list);
+typedef struct XREEffectCleanUp * (*XREEffect)(va_list);
 
 
 struct XREEffectRef {
@@ -28,6 +29,12 @@ struct XREEffectRef * xre_use_effect(
     struct XREContext *,
     XREEffect,
     struct XRERef const * const[],
+    ...
+);
+
+
+struct XREEffectCleanUp * xre_effect_clean_up_alloc(
+    XREEffectCleanUpFunction,
     ...
 );
 
