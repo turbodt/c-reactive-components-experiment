@@ -352,7 +352,7 @@ void title_screen_component(struct XREContext * ctx, va_list props) {
 //------------------------------------------------------------------------------
 
 
-XREEffectCleanUp color_selection_effect(va_list args) {
+struct XREEffectCleanUp * color_selection_effect(va_list args) {
     static char const text_template[] = "RGB(%d, %d, %d)";
 
     struct XREStateInt * red_state = va_arg(args, struct XREStateInt *);
