@@ -50,30 +50,45 @@ void draw_box(struct Box const *box, wchar_t bg, int has_border) {
         box->y -1 * has_border
     };
 
-    wmemset(line, bg, line_len);
-    if (has_border) {
-        line[0] = L'║';
-        line[line_len - 1] = L'║';
-    }
+    if (bg != L'\0') {
+        wmemset(line, bg, line_len);
+        if (has_border) {
+            line[0] = L'║';
+            line[line_len - 1] = L'║';
+        }
 
-    for (int i = 0; i < (int) box->height; i++) {
-        coords.y = box->y + i;
-        screen_wprintf(screen, &coords, line);
+        for (int i = 0; i < (int) box->height; i++) {
+            coords.y = box->y + i;
+            screen_wprintf(screen, &coords, line);
+        }
     }
 
     if (!has_border) {
         return;
     }
 
+    if (bg == L'\0'){
+        wchar_t s[2] = L"║";
+        for (int i = 0; i < (int) box->height; i++) {
+            coords.y = box->y + i;
+            coords.x = box->x - 1;
+            screen_wprintf(screen, &coords, s);
+            coords.x = box->x + box->width;
+            screen_wprintf(screen, &coords, s);
+        }
+    }
+
     wmemset(line, L'═', line_len);
 
     line[0] = L'╔';
     line[line_len - 1] = L'╗';
+    coords.x = box->x -1;
     coords.y = box->y - 1;
     screen_wprintf(screen, &coords, line);
 
     line[0] = L'╚';
     line[line_len - 1] = L'╝';
+    coords.x = box->x -1;
     coords.y = box->y + box->height;
     screen_wprintf(screen, &coords, line);
 };
@@ -257,7 +272,7 @@ void box_screen_component(struct XREContext * ctx, va_list props) {
     struct Box box = {(int) pos_x, (int) pos_y, size_width, size_height};
     ScreenSize const * screen_size = screen_get_size(screen);
 
-    ScreenCoordinates text_coords = {0, 0};
+    ScreenCoordinates text_coords = {1, 0};
 
     if (pressed_key == 'k' && box.y > 0) {
         pos_y -= y_delta;
@@ -526,7 +541,7 @@ void timer_screen_component(struct XREContext * ctx, va_list props) {
         screen_printf(screen, &text_coords, "Timer is done!");
         timer_clear(timer);
     } else if (pressed_key != EOF) {
-        timer_set(timer, 5.0);
+        timer_set(timer, 50.0);
     } else {
         text_coords.y = 9;
         screen_printf(screen, &text_coords, "Press any key");
@@ -534,13 +549,45 @@ void timer_screen_component(struct XREContext * ctx, va_list props) {
 
     double progress = timer_get_progress(timer);
     struct Box pbar_box = {(screen_size->cols - 14) / 2, 6, 10, 1};
-    draw_box(&pbar_box, L'░', 1);
+    draw_box(&pbar_box, L' ', 1);
     for (size_t i = 0; i < pbar_box.width; i++) {
-        if (i >= progress * (double) pbar_box.width) {
+        double exact_width = progress * (double) pbar_box.width;
+        if (i > exact_width) {
             continue;
         }
+
         ScreenCoordinates char_coords = {pbar_box.x + i, pbar_box.y};
-        screen_wprintf(screen, &char_coords, L"█");
+
+        if (i + 1 <= exact_width) {
+            screen_wprintf(screen, &char_coords, L"█");
+            continue;
+        }
+        int diff = 8 * (exact_width - i);
+
+        switch(diff) {
+            case 1:
+                screen_wprintf(screen, &char_coords, L"▏");
+                break;
+            case 2:
+                screen_wprintf(screen, &char_coords, L"▎");
+                break;
+            case 3:
+                screen_wprintf(screen, &char_coords, L"▍");
+                break;
+            case 4:
+                screen_wprintf(screen, &char_coords, L"▌");
+                break;
+            case 5:
+                screen_wprintf(screen, &char_coords, L"▋");
+                break;
+            case 6:
+                screen_wprintf(screen, &char_coords, L"▊");
+                break;
+            case 7:
+                screen_wprintf(screen, &char_coords, L"▉");
+                break;
+            default:
+        }
     }
     text_coords.y = pbar_box.y;
     text_coords.x = pbar_box.x + pbar_box.width + 2;
@@ -597,28 +644,28 @@ void app(struct XREContext * ctx, va_list props) {
         xre_state_set_int(child_index_state, child_index);
     }
 
-    draw_box(
-        &(struct Box){1,1, screen_size->cols - 2, screen_size->rows - 2},
-        L' ',
-        1
-    );
-
     xre_use_ikey(child_index, children[child_index], ctx);
     if (timer_is_running(timer)) {
         draw_transition(children_titles[child_index]);
     }
 
-    text_coords.x = 0;
-    text_coords.y = screen_size->rows -1;
-    screen_printf(screen, &text_coords, "Press <ESC> to terminate.");
+    draw_box(
+        &(struct Box){1,1, screen_size->cols - 2, screen_size->rows - 2},
+        L'\0',
+        1
+    );
 
-    text_coords.x = screen_size->cols - 38;
+    text_coords.x = 2;
     text_coords.y = screen_size->rows -1;
-    screen_printf(screen, &text_coords, "Press 'p', 'n' to move among screens.");
+    screen_printf(screen, &text_coords, "╡ Press <ESC> to terminate. ╞");
 
-    text_coords.x = 0;
+    text_coords.x = screen_size->cols - 43;
+    text_coords.y = screen_size->rows -1;
+    screen_wprintf(screen, &text_coords, L"╡ Press 'p', 'n' to move among screens. ╞");
+
+    text_coords.x = 2;
     text_coords.y = 0;
-    screen_printf(screen, &text_coords, "FPS: %d", (int)fps);
+    screen_printf(screen, &text_coords, "╡ FPS: %d ╞", (int)fps);
 
     kbhit();
 };
