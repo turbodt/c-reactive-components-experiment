@@ -1,5 +1,5 @@
-#ifndef KBHIT_H
-#define KBHIT_H
+#ifndef EXAMPLES_UTILS_KBHIT_H
+#define EXAMPLES_UTILS_KBHIT_H
 
 
 void kb_init(void);

@@ -1,5 +1,5 @@
-#ifndef SCREEN_H
-#define SCREEN_H
+#ifndef EXAMPLES_UTILS_SCREEN_H
+#define EXAMPLES_UTILS_SCREEN_H
 
 
 #include <stdarg.h>

@@ -1,5 +1,5 @@
-#ifndef TERMINAL_H
-#define TERMINAL_H
+#ifndef EXAMPLES_UTILS_TERMINAL_H
+#define EXAMPLES_UTILS_TERMINAL_H
 
 
 #include <stdlib.h>

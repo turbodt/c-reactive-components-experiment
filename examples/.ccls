@@ -1,0 +1,6 @@
+clang
+%c -I../libs/uthash
+%c -I../include
+%c -I./utils
+%c -I./hooks
+-std=c11

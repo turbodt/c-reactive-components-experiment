@@ -1,4 +1,3 @@
 clang
-%c -Isrc/xre/libs/uthash
-%c -Isrc/xre/include
+%c -Ilibs/uthash
 -std=c11

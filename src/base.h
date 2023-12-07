@@ -57,4 +57,9 @@
 #define XRE_INDEX_NOT_FOUND SIZE_MAX
 #endif
 
+
+#ifndef XRE_BOOL
+#define XRE_BOOL int
+#endif
+
 #endif
