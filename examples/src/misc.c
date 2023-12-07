@@ -5,12 +5,13 @@
 #include <time.h>
 #include <string.h>
 #include "xre.h"
-#include "./kbhit.h"
-#include "./terminal.h"
-#include "./msleep.h"
-#include "./screen.h"
-#include "./use_time.h"
-#include "./use_timespec.h"
+#include "../utils/kbhit.h"
+#include "../utils/terminal.h"
+#include "../utils/msleep.h"
+#include "../utils/screen.h"
+#include "../hooks/use_time.h"
+#include "../hooks/use_timer.h"
+#include "../hooks/use_timespec.h"
 
 
 struct Box {
@@ -116,90 +117,6 @@ char use_time_interval(struct XREContext *ctx, double seconds) {
 
     xre_state_set_timespec(last_time_state, now);
     return 1;
-}
-
-
-//------------------------------------------------------------------------------
-
-struct Timer;
-int timer_is_done(struct Timer const *);
-int timer_is_running(struct Timer const *);
-double timer_get_progress(struct Timer const *);
-
-struct Timer {
-    int is_set;
-    struct timespec set_at;
-    double duration_sec;
-};
-
-void * timer_alloc(va_list args) {
-    (void) args;
-
-    struct Timer * timer = (struct Timer *) malloc(sizeof(struct Timer));
-
-    timer->is_set = 0;
-    timer->set_at = (struct timespec){0, 0};
-    timer->duration_sec = 1.0;
-
-    return timer;
-};
-
-void timer_set(struct Timer * timer, double seconds) {
-    clock_gettime(CLOCK_MONOTONIC, &timer->set_at);
-
-    timer->duration_sec = seconds;
-
-    timer->is_set = 1;
-};
-
-void timer_clear(struct Timer * timer) {
-    timer->is_set = 0;
-};
-
-double timer_get_time_sec(struct Timer const *timer) {
-    if (timer->is_set == 0) {
-        return 0.0;
-    }
-
-    struct timespec now = {0, 0};
-    clock_gettime(CLOCK_MONOTONIC, &now);
-
-    double ndiff = now.tv_nsec - timer->set_at.tv_nsec;
-    double sdiff = now.tv_sec - timer->set_at.tv_sec;
-    double running_sec = ndiff / 1000000000L;
-    running_sec += sdiff;
-
-    return running_sec;
-};
-
-double timer_get_progress(struct Timer const *timer) {
-    if (timer->is_set == 0) {
-        return 0.0;
-    }
-
-    double running_sec = timer_get_time_sec(timer);
-    if (running_sec < timer->duration_sec) {
-        return running_sec / timer->duration_sec;
-    }
-
-    return 1.0;
-}
-
-inline int timer_is_done(struct Timer const *timer) {
-    return timer_get_progress(timer) < 1.0 ? 0 : 1;
-};
-
-inline int timer_is_running(struct Timer const *timer) {
-    if (timer->is_set == 0) {
-        return 0;
-    }
-
-    return 1 - timer_is_done(timer);
-};
-
-struct Timer * use_timer(struct XREContext *ctx) {
-    struct XRERef * timer_ref = xre_use_ref(ctx, timer_alloc, free);
-    return xre_ref_get(timer_ref);
 }
 
 
@@ -402,7 +319,7 @@ void color_selector_screen_component(struct XREContext * ctx, va_list props) {
     struct XREStateInt * selected_index_state = xre_use_int(ctx, 0);
     int selected_index = xre_state_get_int(selected_index_state);
 
-    struct XREStateString * text_state = xre_use_string(ctx, "????");
+    struct XREStateString * text_state = xre_use_string(ctx, "");
 
     int pressed_key = use_pressed_key(ctx);
 
@@ -534,7 +451,7 @@ void timer_screen_component(struct XREContext * ctx, va_list props) {
             &text_coords,
             "Timer: %fs of %fs.",
             running_sec,
-            timer->duration_sec
+            timer_get_time_sec(timer)
         );
     } else if (timer_is_done(timer)) {
         text_coords.y = 4;
@@ -587,6 +504,7 @@ void timer_screen_component(struct XREContext * ctx, va_list props) {
                 screen_wprintf(screen, &char_coords, L"▉");
                 break;
             default:
+                break;
         }
     }
     text_coords.y = pbar_box.y;

@@ -1,16 +1,10 @@
-TARGET_NAME = test
-
+TARGET_NAME = xre
 SRC_DIR = ./src
 
-EXTERNAL_INCLUDES = \
-									-I$(PWD)/src/xre/include \
-
-EXTERNAL_LIBRARIES = \
-									 -L$(PWD)/src/xre/lib -lxre \
-
+EXTERNAL_INCLUDES = $(GLOBAL_INCLUDES) -I./libs/uthash
+EXTERNAL_LIBRARIES =
 LOCAL_INCLUDES = -I$(SRC_DIR)
-
-LOCAL_LIBRARIES = \
+LOCAL_LIBRARIES =
 
 #
 #
@@ -22,41 +16,38 @@ CFLAGS = -Wall -Wextra -fPIC -g $(EXTERNAL_INCLUDES) $(LOCAL_INCLUDES)
 
 LDFLAGS = $(LOCAL_LIBRARIES) $(EXTERNAL_LIBRARIES)
 
-SRC = $(SRC_DIR)/main.c \
-			$(SRC_DIR)/use_time.c \
-			$(SRC_DIR)/use_timespec.c \
-			$(SRC_DIR)/msleep.c \
-			$(SRC_DIR)/screen.c \
-			\
-			$(SRC_DIR)/kbhit_unix_posix.c \
-			$(SRC_DIR)/terminal_unix.c \
+SRC = $(wildcard \
+        $(SRC_DIR)/impl/*.c \
+        $(SRC_DIR)/context/impl/*.c \
+        $(SRC_DIR)/use_value/impl/*.c \
+      )
 
-OBJ_DIR = $(PWD)/build
+OBJ_DIR = build
 OBJ = $(patsubst $(SRC_DIR)/%.c, $(OBJ_DIR)/%.o, $(SRC))
 
-TARGET = $(PWD)/$(TARGET_NAME)
+LIB_DIR = lib
+SHARED_LIB = $(LIB_DIR)/lib$(TARGET_NAME).so
 
 #
 #
 #
 
-all: xre $(TARGET)
+all: create_lib
 
-$(TARGET): $(OBJ)
-	$(CC) $(CFLAGS) $(OBJ) -o $(TARGET) $(LDFLAGS)
+create_lib: $(SHARED_LIB)
 
-$(OBJ_DIR)/%.o: $(SRC_DIR)/%.c
+$(SHARED_LIB): $(OBJ) | $(LIB_DIR)
+	$(CC) -shared -o $@ $^
+
+$(OBJ_DIR)/%.o: src/%.c
 	mkdir -p $(@D)
-	$(CC) $(CFLAGS) -c $< -o $@
+	$(CC) $(CFLAGS) $(INCLUDES) -c $< -o $@
 
-xre:
-	$(MAKE) -C $(PWD)/src/xre GLOBAL_INCLUDES="$(EXTERNAL_INCLUDES)"
+$(LIB_DIR):
+	mkdir -p $@
 
 clean:
-	-rm -f $(TARGET)
-	-rm -rf $(OBJ_DIR)
+	rm -rf $(OBJ_DIR)
+	rm -rf $(LIB_DIR)
 
-clean-all: clean
-	- $(MAKE) -C $(PWD)/src/xre clean
-
-.PHONY: all clean clean-all
+.PHONY: all clean

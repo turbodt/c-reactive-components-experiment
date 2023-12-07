@@ -11,11 +11,11 @@ static int * oldf = NULL;
 
 
 void kb_init(void) {
-    oldt = XRE_ALLOC(struct termios, 1);
-    XRE_ASSERT_ALLOC(oldt);
+    oldt = ALLOC(struct termios, 1);
+    ASSERT_ALLOC(oldt);
 
-    oldf = XRE_ALLOC(int, 1);
-    XRE_ASSERT_ALLOC(oldf);
+    oldf = ALLOC(int, 1);
+    ASSERT_ALLOC(oldf);
 
     struct termios newt;
 
@@ -35,14 +35,14 @@ void kb_clean_up(void) {
     tcsetattr(STDIN_FILENO, TCSANOW, oldt);
     fcntl(STDIN_FILENO, F_SETFL, *oldf);
 
-    XRE_FREE(oldt);
-    XRE_FREE(oldf);
+    FREE(oldt);
+    FREE(oldf);
 }
 
 
 inline int kbhit(void) {
-    XRE_ASSERT_ALLOC(oldt);
-    XRE_ASSERT_ALLOC(oldf);
+    ASSERT_ALLOC(oldt);
+    ASSERT_ALLOC(oldf);
     return getchar();
 }
 

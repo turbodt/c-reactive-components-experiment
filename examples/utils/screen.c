@@ -44,18 +44,18 @@ static void remove_current_line(void);
 
 
 Screen * screen_alloc(FILE * out, ScreenSize const * size) {
-    Screen * screen = XRE_ALLOC(Screen, 1);
-    XRE_ASSERT_ALLOC(screen);
+    Screen * screen = ALLOC(Screen, 1);
+    ASSERT_ALLOC(screen);
 
     screen->out = out;
     screen->size = *size;
 
     size_t wc_size = sizeof(wchar_t);
-    screen->next_values = XRE_ALLOC(wchar_t, buffer_get_len(size) * wc_size);
-    XRE_ASSERT_ALLOC(screen->next_values);
+    screen->next_values = ALLOC(wchar_t, buffer_get_len(size) * wc_size);
+    ASSERT_ALLOC(screen->next_values);
 
-    screen->last_values = XRE_ALLOC(wchar_t, buffer_get_len(size) * wc_size);
-    XRE_ASSERT_ALLOC(screen->last_values);
+    screen->last_values = ALLOC(wchar_t, buffer_get_len(size) * wc_size);
+    ASSERT_ALLOC(screen->last_values);
 
     screen->has_rendered = FALSE;
 
@@ -67,9 +67,9 @@ Screen * screen_alloc(FILE * out, ScreenSize const * size) {
 void screen_destroy(Screen * screen) {
     RETURN_IF_NULL(screen);
 
-    XRE_FREE(screen->next_values);
-    XRE_FREE(screen->last_values);
-    XRE_FREE(screen);
+    FREE(screen->next_values);
+    FREE(screen->last_values);
+    FREE(screen);
 }
 
 

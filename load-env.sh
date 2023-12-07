@@ -1,5 +1,7 @@
 #!/bin/sh
 
+SCRIPT_DIR=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
+
 export LD_LIBRARY_PATH=""
 
-export LD_LIBRARY_PATH="${LD_LIBRARY_PATH}:${PWD}/src/xre/lib"
+export LD_LIBRARY_PATH="${LD_LIBRARY_PATH}:${SCRIPT_DIR}/lib"
