@@ -8,8 +8,8 @@
 
 
 struct XREEffectCleanUp {
-    void (*fn)(va_list);
-    va_list props;
+    XREEffectCleanUpFunction fn;
+    void * props;
 };
 
 
@@ -90,11 +90,12 @@ struct XREEffectRef * xre_use_effect(
 
 struct XREEffectCleanUp * xre_effect_clean_up_alloc(
     XREEffectCleanUpFunction clean_up_fn,
-    ...
+    void * props
 ) {
     struct XREEffectCleanUp * clean_up = XRE_ALLOC(struct XREEffectCleanUp, 1);
     XRE_ASSERT_ALLOC(clean_up);
-    va_start(clean_up->props, clean_up_fn);
+    clean_up->fn = clean_up_fn;
+    clean_up->props = props;
     return clean_up;
 };
 
@@ -106,7 +107,8 @@ struct XREEffectCleanUp * xre_effect_clean_up_alloc(
 
 inline void xre_effect_clean_up_destroy(struct XREEffectCleanUp * clean_up) {
     RETURN_IF_NULL(clean_up);
-    va_end(clean_up->props);
+    clean_up->fn = NULL;
+    clean_up->props = NULL;
     XRE_FREE(clean_up);
 };
 
