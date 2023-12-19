@@ -5,6 +5,7 @@
 #include "./use_x_factory.h"
 
 
+XRE_USE_X_FACTORY_H(void *, XREStatePtr, ptr);
 XRE_USE_X_FACTORY_H(char, XREStateChar, char)
 XRE_USE_X_FACTORY_H(int, XREStateInt, int)
 XRE_USE_X_FACTORY_H(size_t, XREStateSize, size)
