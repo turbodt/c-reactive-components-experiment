@@ -54,7 +54,8 @@ struct XREEffectRef * xre_use_veffect(
     }
 
     size_t index = 0;
-    XRE_BOOL deps_have_changed = IS_NULL(dependencies);
+    XRE_BOOL deps_have_changed = IS_NULL(dependencies)
+        || xre_ref_has_changed(&effect_ref->ref);
     while (!deps_have_changed && !IS_NULL(dependencies[index])) {
         deps_have_changed = xre_ref_has_changed(dependencies[index]);
         index++;
