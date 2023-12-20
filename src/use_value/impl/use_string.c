@@ -35,17 +35,23 @@ struct XREStateString * xre_use_string(struct XREContext * ctx, char const * ini
 
 
 inline char const * xre_state_get_string(struct XREStateString *state) {
-    return ((XREString *) xre_ref_get((struct XRERef *)state))->value;
+    return ((XREString *) xre_ref_get(&state->ref))->value;
+};
+
+
+inline size_t xre_state_get_string_len(struct XREStateString *state) {
+    RETURN_V_IF_NULL(state, 0);
+    return ((XREString *) xre_ref_get(&state->ref))->len;
 };
 
 
 inline void xre_state_set_string(struct XREStateString *state, char const * value) {
-    xre_ref_set((struct XRERef *)state, &value);
+    xre_ref_set(&state->ref, &value);
 }
 
 
 inline XRE_BOOL xre_state_string_has_changed(struct XREStateString const *state) {
-    return xre_ref_has_changed((struct XRERef *)state);
+    return xre_ref_has_changed(&state->ref);
 }
 
 

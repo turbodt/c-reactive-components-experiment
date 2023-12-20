@@ -7,12 +7,13 @@
 
 
 struct XREStateString {
-    struct XRERef * use_ref;
+    struct XRERef ref;
 };
 
 
 struct XREStateString * xre_use_string(struct XREContext *, char const *);
 char const * xre_state_get_string(struct XREStateString *);
+size_t xre_state_get_string_len(struct XREStateString *);
 void xre_state_set_string(struct XREStateString *, char const *);
 int xre_state_string_has_changed(struct XREStateString const *); // TODO int -> XRE_BOOL
 
