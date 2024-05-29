@@ -40,8 +40,8 @@ void xre_context_destroy(struct XREContext * context) {
 
     xre_context_children_destroy(context);
 
-    for (size_t index = 0; index < ctx->states_count; index++) {
-        xre_context_state_clear(&ctx->states[index]);
+    for (size_t index = ctx->states_count; index > 0; index--) {
+        xre_context_state_clear(&ctx->states[index-1]);
     }
     XRE_FREE(ctx->states);
 
