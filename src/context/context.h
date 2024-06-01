@@ -28,4 +28,9 @@ struct XREContextState * xre_context_append_new_state(
 );
 
 
+#ifndef XRE_CONFIG_NOT_STRUCT_ALIAS
+typedef struct XREContext XREContext;
+#endif
+
+
 #endif

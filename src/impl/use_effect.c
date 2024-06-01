@@ -7,19 +7,19 @@
 #define TRUE 1
 
 
-struct XREEffectCleanUp {
+typedef struct XREEffectCleanUp {
     XREEffectCleanUpFunction fn;
     void * props;
-};
+} XREEffectCleanUp;
 
 
 typedef struct EffectRefValue {
     XREEffect effect;
-    struct XREEffectCleanUp * clean_up;
+    XREEffectCleanUp * clean_up;
 } EffectRefValue;
 
 
-static void xre_effect_clean_up_destroy(struct XREEffectCleanUp *);
+static void xre_effect_clean_up_destroy(XREEffectCleanUp *);
 static void * xre_effect_constructor(va_list);
 static void xre_effect_destructor(void *);
 static void xre_effect_assignator(void *, void const *);
@@ -29,7 +29,7 @@ static void call_and_destroy_clean_up(EffectRefValue const *);
 static void xre_effect_set_effect(struct XREEffectRef *, XREEffect);
 static void xre_effect_set_clean_up(
     struct XREEffectRef *,
-    struct XREEffectCleanUp *
+    XREEffectCleanUp *
 );
 
 
@@ -89,11 +89,11 @@ struct XREEffectRef * xre_use_effect(
 };
 
 
-struct XREEffectCleanUp * xre_effect_clean_up_alloc(
+XREEffectCleanUp * xre_effect_clean_up_alloc(
     XREEffectCleanUpFunction clean_up_fn,
     void * props
 ) {
-    struct XREEffectCleanUp * clean_up = XRE_ALLOC(struct XREEffectCleanUp, 1);
+    XREEffectCleanUp * clean_up = XRE_ALLOC(XREEffectCleanUp, 1);
     XRE_ASSERT_ALLOC(clean_up);
     clean_up->fn = clean_up_fn;
     clean_up->props = props;
@@ -106,7 +106,7 @@ struct XREEffectCleanUp * xre_effect_clean_up_alloc(
 //------------------------------------------------------------------------------
 
 
-inline void xre_effect_clean_up_destroy(struct XREEffectCleanUp * clean_up) {
+inline void xre_effect_clean_up_destroy(XREEffectCleanUp * clean_up) {
     RETURN_IF_NULL(clean_up);
     clean_up->fn = NULL;
     clean_up->props = NULL;
@@ -159,7 +159,7 @@ inline void call_effect(struct XREEffectRef * effect_ref, va_list args) {
     call_and_destroy_clean_up(value);
     value->clean_up = NULL;
 
-    struct XREEffectCleanUp * clean_up = NULL;
+    XREEffectCleanUp * clean_up = NULL;
 
     if (!IS_NULL(value->effect)) {
         clean_up = value->effect(args);
@@ -193,7 +193,7 @@ inline void xre_effect_set_effect(
 
 inline void xre_effect_set_clean_up(
     struct XREEffectRef *effect_ref,
-    struct XREEffectCleanUp * clean_up
+    XREEffectCleanUp * clean_up
 ) {
     EffectRefValue * value = (EffectRefValue *) xre_ref_get(&effect_ref->ref);
     EffectRefValue new_value = {
