@@ -18,4 +18,9 @@ void xre_state_set_string(struct XREStateString *, char const *);
 int xre_state_string_has_changed(struct XREStateString const *); // TODO int -> XRE_BOOL
 
 
+#ifndef XRE_CONFIG_NOT_STRUCT_ALIAS
+typedef struct XREStateString XREStateString;
+#endif
+
+
 #endif

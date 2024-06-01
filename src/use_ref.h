@@ -59,4 +59,9 @@ int xre_ref_cmp(struct XRERef const *, void const *); // TODO int -> XRE_BOOL
 int xre_ref_has_changed(struct XRERef const *); // TODO int -> XRE_BOOL
 
 
+#ifndef XRE_CONFIG_NOT_STRUCT_ALIAS
+typedef struct XRERef XRERef;
+#endif
+
+
 #endif

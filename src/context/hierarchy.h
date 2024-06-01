@@ -14,6 +14,4 @@ void xre_context_children_add(struct XREContext *, struct XREContext *);
 void xre_context_children_destroy(struct XREContext *);
 
 
-
-
 #endif
