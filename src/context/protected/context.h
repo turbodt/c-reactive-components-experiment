@@ -17,7 +17,7 @@ struct ContextPrivate {
     size_t states_index;
     size_t states_count;
     struct XREContextState *states;
-    Component component;
+    XREComponent component;
 
     UT_hash_handle hh;
 };

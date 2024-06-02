@@ -7,12 +7,12 @@
 static char const XRE_ROOT_KEY[] = "ROOT";
 
 
-static void component_call(struct XREContext *, Component, va_list);
+static void component_call(struct XREContext *, XREComponent, va_list);
 
 
 void xre_vuse(
     char const * key,
-    Component component,
+    XREComponent component,
     struct XREContext *parent_context,
     va_list props
 ) {
@@ -32,7 +32,7 @@ void xre_vuse(
 
 void xre_use(
     char const * key,
-    Component component,
+    XREComponent component,
     struct XREContext *parent_context,
     ...
 ) {
@@ -45,7 +45,7 @@ void xre_use(
 
 void xre_use_ikey(
     int key,
-    Component component,
+    XREComponent component,
     struct XREContext *parent_context,
     ...
 ) {
@@ -61,7 +61,7 @@ void xre_use_ikey(
 
 
 void xre_vuse_root(
-    Component component,
+    XREComponent component,
     struct XREContext *parent_context,
     va_list props
 ) {
@@ -72,7 +72,7 @@ void xre_vuse_root(
 
 
 void xre_use_root(
-    Component component,
+    XREComponent component,
     struct XREContext *parent_context,
     ...
 ) {
@@ -90,7 +90,7 @@ void xre_use_root(
 
 inline void component_call(
     struct XREContext *ctx,
-    Component component,
+    XREComponent component,
     va_list props
 ) {
     component(ctx, props);
