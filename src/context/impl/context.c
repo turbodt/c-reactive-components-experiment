@@ -6,7 +6,7 @@
 #include <string.h>
 
 
-struct XREContext * xre_context_alloc(char const * key, Component component) {
+struct XREContext * xre_context_alloc(char const * key, XREComponent component) {
     ContextPrivate * ctx = XRE_ALLOC(ContextPrivate, 1);
 
     ctx->key = NULL;

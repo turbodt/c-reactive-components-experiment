@@ -519,7 +519,7 @@ void timer_screen_component(struct XREContext * ctx, va_list props) {
 void app(struct XREContext * ctx, va_list props) {
 
     static size_t const children_count = 5;
-    static Component const children[] = {
+    static XREComponent const children[] = {
         title_screen_component,
         color_selector_screen_component,
         timer_screen_component,
