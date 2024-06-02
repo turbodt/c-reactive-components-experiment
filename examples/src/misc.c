@@ -516,22 +516,103 @@ void timer_screen_component(struct XREContext * ctx, va_list props) {
 //------------------------------------------------------------------------------
 
 
+void ctx_destructor_screen_component(struct XREContext * ctx, va_list props) {
+    struct XREContext * parent_ctx = va_arg(props, struct XREContext *);
+    size_t children_count = va_arg(props, size_t);
+    char const * const * children_titles = va_arg(props, char const * const *);
+
+    static char const title[] = "App Context Deleter";
+
+    struct XREStateSize * selected_index_state = xre_use_size(ctx, 0);
+    struct XREStatePtr * selected_ctx_state = xre_use_ptr(ctx, NULL);
+    struct XREStateChar * reload_state = xre_use_char(ctx, 0);
+    size_t selected_index = xre_state_get_size(selected_index_state);
+    ScreenSize const * screen_size = screen_get_size(screen);
+    int pressed_key = use_pressed_key(ctx);
+
+    if (pressed_key == 'k' && selected_index > 0) {
+        selected_index--;
+        xre_state_set_size(selected_index_state, selected_index);
+    } else if (pressed_key == 'j' && selected_index + 1 < children_count) {
+        selected_index++;
+        xre_state_set_size(selected_index_state, selected_index);
+    }
+
+    if (
+        xre_state_char_has_changed(reload_state)
+        || xre_state_size_has_changed(selected_index_state)
+    ) {
+        char selected_key[12];
+        snprintf(selected_key, 12, "%zu", selected_index);
+        struct XREContext * child_ctx = xre_context_children_get(
+            parent_ctx,
+            selected_key
+        );
+        xre_state_set_ptr(selected_ctx_state, child_ctx);
+    }
+
+    ScreenCoordinates text_coords = {0, 4};
+    text_coords.x = (screen_size->cols - strlen(title)) / 2;
+    screen_printf(screen, &text_coords, "%s", title);
+    text_coords.y += 2;
+
+    text_coords.x -= 3;
+    for (size_t i = 0; i < children_count; i++) {
+        char const * title = children_titles[i];
+        if (i == selected_index) {
+            screen_printf(screen, &text_coords, "-> %zu. %s", i+1, title);
+        } else {
+            screen_printf(screen, &text_coords, "   %zu. %s", i+1, title);
+        }
+        text_coords.y++;
+    }
+    text_coords.y++;
+    text_coords.x += 3;
+
+    void * child_ctx = xre_state_get_ptr(selected_ctx_state);
+    if (child_ctx == NULL) {
+        screen_printf(screen, &text_coords, "No context found.");
+        text_coords.y++;
+    } else {
+        screen_printf(screen, &text_coords, "Context: %p", child_ctx);
+        text_coords.y++;
+        screen_printf(screen, &text_coords, "Press enter to clear.");
+    }
+
+    if (pressed_key == '\n' && child_ctx != NULL) {
+        char selected_key[12];
+        snprintf(selected_key, 12, "%zu", selected_index);
+        xre_context_child_destroy(parent_ctx, selected_key);
+
+        xre_state_set_ptr(selected_ctx_state, NULL);
+        char reload = xre_state_get_char(reload_state);
+        reload++;
+        xre_state_set_char(reload_state, reload);
+    }
+}
+
+
+//------------------------------------------------------------------------------
+
+
 void app(struct XREContext * ctx, va_list props) {
 
-    static size_t const children_count = 5;
+    static size_t const children_count = 6;
     static XREComponent const children[] = {
         title_screen_component,
         color_selector_screen_component,
         timer_screen_component,
         box_screen_component,
         box_screen_component,
+        ctx_destructor_screen_component,
     };
     static char const * children_titles[] = {
         "Title",
         "Color Selector",
         "Timer",
         "Box 1",
-        "Box 2"
+        "Box 2",
+        "Context Destructor",
     };
     static double const TRANSITION_DURATION = 0.5;
 
@@ -562,7 +643,18 @@ void app(struct XREContext * ctx, va_list props) {
         xre_state_set_int(child_index_state, child_index);
     }
 
-    xre_use_ikey(child_index, children[child_index], ctx);
+    if (strcmp(children_titles[child_index], "Context Destructor") == 0) {
+        xre_use_ikey(
+            child_index,
+            children[child_index],
+            ctx,
+            ctx,
+            children_count,
+            children_titles
+        );
+    } else {
+        xre_use_ikey(child_index, children[child_index], ctx);
+    }
     if (timer_is_running(timer)) {
         draw_transition(children_titles[child_index]);
     }
