@@ -46,3 +46,16 @@ void xre_context_children_destroy(struct XREContext *context) {
 
     ctx->children = NULL;
 };
+
+
+void xre_context_child_destroy(struct XREContext *context, char const * key) {
+    ContextPrivate * ctx = TO_CONTEXT_PRIV(context);
+    ContextPrivate *child_context;
+    HASH_FIND_STR(ctx->children, key, child_context);
+    if (child_context == NULL) {
+        return;
+    }
+
+    HASH_DEL(ctx->children, child_context);
+    xre_context_destroy(TO_CONTEXT_PUB(child_context));
+};

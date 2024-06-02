@@ -12,6 +12,7 @@ struct XREContext const * xre_context_children_get_const(
 struct XREContext * xre_context_children_get(struct XREContext *, char const *);
 void xre_context_children_add(struct XREContext *, struct XREContext *);
 void xre_context_children_destroy(struct XREContext *);
+void xre_context_child_destroy(struct XREContext *, char const *);
 
 
 #endif
