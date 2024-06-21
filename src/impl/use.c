@@ -1,6 +1,6 @@
-#include "./use.h"
-#include "./context/main.h"
-#include "./base.h"
+#include "../use.h"
+#include "../context/main.h"
+#include "../base.h"
 #include <stdio.h>
 
 
@@ -12,8 +12,8 @@ static void component_call(struct XREContext *, XREComponent, va_list);
 
 void xre_vuse(
     char const * key,
-    XREComponent component,
     struct XREContext *parent_context,
+    XREComponent component,
     va_list props
 ) {
 
@@ -32,21 +32,21 @@ void xre_vuse(
 
 void xre_use(
     char const * key,
-    XREComponent component,
     struct XREContext *parent_context,
+    XREComponent component,
     ...
 ) {
     va_list props;
-    va_start(props, parent_context);
-    xre_vuse(key, component, parent_context, props);
+    va_start(props, component);
+    xre_vuse(key, parent_context, component, props);
     va_end(props);
 };
 
 
 void xre_use_ikey(
     int key,
-    XREComponent component,
     struct XREContext *parent_context,
+    XREComponent component,
     ...
 ) {
     char key_str[12];
@@ -54,31 +54,31 @@ void xre_use_ikey(
     sprintf(key_str, "%d", key);
 
     va_list props;
-    va_start(props, parent_context);
-    xre_vuse(key_str, component, parent_context, props);
+    va_start(props, component);
+    xre_vuse(key_str, parent_context, component, props);
     va_end(props);
 };
 
 
 void xre_vuse_root(
-    XREComponent component,
     struct XREContext *parent_context,
+    XREComponent component,
     va_list props
 ) {
     xre_context_state_reset_index(parent_context);
 
-    xre_vuse(XRE_ROOT_KEY, component, parent_context, props);
+    xre_vuse(XRE_ROOT_KEY, parent_context, component, props);
 };
 
 
 void xre_use_root(
-    XREComponent component,
     struct XREContext *parent_context,
+    XREComponent component,
     ...
 ) {
     va_list props;
-    va_start(props, parent_context);
-    xre_vuse_root(component, parent_context, props);
+    va_start(props, component);
+    xre_vuse_root(parent_context, component, props);
     va_end(props);
 };
 
