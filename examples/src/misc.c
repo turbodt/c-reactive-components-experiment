@@ -646,14 +646,14 @@ void app(struct XREContext * ctx, va_list props) {
     if (strcmp(children_titles[child_index], "Context Destructor") == 0) {
         xre_use_ikey(
             child_index,
-            children[child_index],
             ctx,
+            children[child_index],
             ctx,
             children_count,
             children_titles
         );
     } else {
-        xre_use_ikey(child_index, children[child_index], ctx);
+        xre_use_ikey(child_index, ctx, children[child_index]);
     }
     if (timer_is_running(timer)) {
         draw_transition(children_titles[child_index]);
@@ -699,7 +699,7 @@ int main(void) {
 
     int exit = 0;
     while (!exit) {
-        xre_use_root(app, root_context, &exit);
+        xre_use_root(root_context, app, &exit);
         screen_render(screen);
 
         msleep((long int)(1000 * SPF));

@@ -64,7 +64,7 @@ int main(void) {
 
     int exit = 0;
     while (!exit) {
-        xre_use_root(app_component, root_context, &exit);
+        xre_use_root(root_context, app_component, &exit);
         screen_render(screen);
 
         msleep((long int)(1000 * SPF));
@@ -140,8 +140,8 @@ void app_component(struct XREContext * ctx, va_list props) {
     struct XREStateInt * cb1_value_state = xre_use_int(ctx, 0);
     xre_use(
         "My example checkbox",
-        checkbox,
         ctx,
+        checkbox,
         (struct CheckboxProps) {
             .is_focused = cb_index == 0,
             .label = "This is a checkbox",
@@ -152,8 +152,8 @@ void app_component(struct XREContext * ctx, va_list props) {
     struct XREStateInt * cb2_value_state = xre_use_int(ctx, 0);
     xre_use(
         "My example checkbox two",
-        checkbox,
         ctx,
+        checkbox,
         (struct CheckboxProps) {
             .is_focused = cb_index == 1,
             .label = "This is another checkbox",
