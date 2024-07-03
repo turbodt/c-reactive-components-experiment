@@ -139,8 +139,8 @@ void app_component(struct XREContext * ctx, va_list props) {
 
     struct XREStateInt * cb1_value_state = xre_use_int(ctx, 0);
     xre_use(
-        "My example checkbox",
         ctx,
+        "My example checkbox",
         checkbox,
         (struct CheckboxProps) {
             .is_focused = cb_index == 0,
@@ -151,8 +151,8 @@ void app_component(struct XREContext * ctx, va_list props) {
     );
     struct XREStateInt * cb2_value_state = xre_use_int(ctx, 0);
     xre_use(
-        "My example checkbox two",
         ctx,
+        "My example checkbox two",
         checkbox,
         (struct CheckboxProps) {
             .is_focused = cb_index == 1,

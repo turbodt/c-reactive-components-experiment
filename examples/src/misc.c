@@ -645,15 +645,15 @@ void app(struct XREContext * ctx, va_list props) {
 
     if (strcmp(children_titles[child_index], "Context Destructor") == 0) {
         xre_use_ikey(
-            child_index,
             ctx,
+            child_index,
             children[child_index],
             ctx,
             children_count,
             children_titles
         );
     } else {
-        xre_use_ikey(child_index, ctx, children[child_index]);
+        xre_use_ikey(ctx, child_index, children[child_index]);
     }
     if (timer_is_running(timer)) {
         draw_transition(children_titles[child_index]);
