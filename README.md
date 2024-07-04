@@ -16,7 +16,8 @@
 		1. [Use state](#use-state)
 		2. [Use effect](#use-effect)
 	4. [Example](#example)
-5. [License](#license)
+5. [Dependencies](#dependencies)
+6. [License](#license)
 
 
 ## Description
@@ -271,6 +272,15 @@ void app(XREContext *ctx, va_list args) {
     }
 }
 ```
+
+
+## Dependencies
+
+
+This library only depends on the [UTHash](https://troydhanson.github.io/uthash/) library, which is a header file.
+
+
+The current make file expects this header file to be inside a folder called `./external/uthash`.
 
 
 ## License
