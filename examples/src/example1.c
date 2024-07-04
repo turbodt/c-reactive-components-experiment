@@ -14,29 +14,35 @@
 
 
 #define BOOL unsigned int
+#define KEY_PRESS_DEBOUNCE_S 0.05
 
 
-struct Box {
+typedef struct Box {
     int x;
     int y;
     size_t width;
     size_t height;
-};
+} Box;
 
 
-struct CheckboxProps {
+typedef struct CheckboxProps {
     BOOL const is_focused;
     char const * label;
     ScreenCoordinates position;
-    struct XREStateInt * value_state;
-};
-
-
-#define KEY_PRESS_DEBOUNCE_S 0.05
+    XREStateInt * value_state;
+} CheckboxProps;
+typedef struct SelectorProps {
+    int focused_option_index;
+    int option_count;
+    char const ** labels;
+    int const * values;
+    ScreenCoordinates position;
+    XREStateInt * value_state;
+} SelectorProps;
 
 
 static Screen * screen = NULL;
-static void screen_init(struct ScreenSize const * screen_size) {
+static void screen_init(ScreenSize const * screen_size) {
     setlocale(LC_ALL, "");
     screen = screen_alloc(stdout, screen_size);
 }
@@ -46,21 +52,22 @@ static void screen_clean_up(void) {
 }
 
 
-static void app_component(struct XREContext *, va_list);
-static void checkbox(struct XREContext *, va_list);
+static void app_component(XREContext *, va_list);
+static void checkbox(XREContext *, va_list);
+static void selector(XREContext *, va_list);
 
 
 int main(void) {
     double const SPF = 0.016;
-    struct TerminalSize terminal_size = get_terminal_size();
-    struct ScreenSize const screen_size = {
-        .rows=10,
+    TerminalSize terminal_size = get_terminal_size();
+    ScreenSize const screen_size = {
+        .rows=12,
         .cols=terminal_size.cols
     };
 
     kb_init();
     screen_init(&screen_size);
-    struct XREContext * root_context = xre_context_root_alloc();
+    XREContext * root_context = xre_context_root_alloc();
 
     int exit = 0;
     while (!exit) {
@@ -77,27 +84,24 @@ int main(void) {
 }
 
 
-static struct XREEffectCleanUp * app_component_key_press_effect(va_list args) {
-    struct XREStateInt * count_state = va_arg(args, struct XREStateInt *);
-    int count = xre_state_get_int(count_state);
-    count++;
-    xre_state_set_int(count_state, count);
-
-    return NULL;
-}
-
-
-void app_component(struct XREContext * ctx, va_list props) {
+void app_component(XREContext * ctx, va_list props) {
+    static const int color_option_count = 3;
+    static int const cb_count = 2 + color_option_count;
+    static char const * color_labels[] = {
+        "No color",
+        "Red text",
+        "Green text"
+    };
+    static int const color_values[] = {0, 1, 2};
 
     int * should_exit = va_arg(props, int *);
 
     ScreenSize const * screen_size = screen_get_size(screen);
-    struct XREStateInt * key_press_state = xre_use_int(ctx, EOF);
-    struct XREStateInt * key_press_count_state = xre_use_int(ctx, 0);
-    int key_press_count = xre_state_get_int(key_press_count_state);
-    struct XREStateInt * key_change_count_state = xre_use_int(ctx, 0);
+    XREStateInt * key_press_state = xre_use_int(ctx, EOF);
+    XREStateInt * cb_index_state = xre_use_int(ctx, 0);
+    XREStateInt * is_bold_state = xre_use_int(ctx, 0);
+    XREStateInt * color_state = xre_use_int(ctx, 0);
 
-    struct XREStateInt * cb_index_state = xre_use_int(ctx, 0);
     int cb_index = xre_state_get_int(cb_index_state);
 
     ScreenCoordinates text_coords = {0, 0};
@@ -108,86 +112,114 @@ void app_component(struct XREContext * ctx, va_list props) {
 
     if (pressed_key == 27) {
         *should_exit = 1;
-    } else if (pressed_key == 'k') {
-        cb_index = (cb_index + 1)%2;
-        xre_state_set_int(cb_index_state, cb_index);
     } else if (pressed_key == 'j') {
-        cb_index = (cb_index + 2 - 1)%2;
+        cb_index = (cb_index + 1)%cb_count;
         xre_state_set_int(cb_index_state, cb_index);
-    } else if (pressed_key != EOF) {
-        key_press_count++;
-        xre_state_set_int(key_press_count_state, key_press_count);
-    } else {
+    } else if (pressed_key == 'k') {
+        cb_index = (cb_index + cb_count - 1)%cb_count;
+        xre_state_set_int(cb_index_state, cb_index);
     }
 
-    struct XRERef const * const effect_deps[] = {&key_press_state->ref , NULL};
-    xre_use_effect(
-        ctx,
-        app_component_key_press_effect,
-        effect_deps,
-        key_change_count_state
-    );
+    int is_bold = xre_state_get_int(is_bold_state);
+    int color = xre_state_get_int(color_state);
 
-    int key_change_count = xre_state_get_int(key_change_count_state);
+    char modifiers[32] = "";
+
+    if (is_bold) {
+        strcat(modifiers, "\033[30;0;1m");
+    }
+
+    switch (color) {
+        case 1:
+            strcat(modifiers, "\033[31m");
+            break;
+        case 2:
+            strcat(modifiers, "\033[32m");
+            break;
+        default:
+            strcat(modifiers, "\033[37m");
+            break;
+    }
 
     text_coords.y = 0;
-    screen_printf(screen, &text_coords, "Key press count: %d", key_press_count);
-    text_coords.y = 1;
-    screen_printf(screen, &text_coords, "Key change count: %d", key_change_count);
-    text_coords.y = 2;
-    screen_printf(screen, &text_coords, "Key pressed code: %d", (unsigned char)key_press);
-
-    struct XREStateInt * cb1_value_state = xre_use_int(ctx, 0);
-    xre_use(
-        ctx,
-        "My example checkbox",
-        checkbox,
-        (struct CheckboxProps) {
-            .is_focused = cb_index == 0,
-            .label = "This is a checkbox",
-            .position = (ScreenCoordinates){0, 4},
-            .value_state=cb1_value_state
-        }
-    );
-    struct XREStateInt * cb2_value_state = xre_use_int(ctx, 0);
-    xre_use(
-        ctx,
-        "My example checkbox two",
-        checkbox,
-        (struct CheckboxProps) {
-            .is_focused = cb_index == 1,
-            .label = "This is another checkbox",
-            .position = (ScreenCoordinates){0, 5},
-            .value_state=cb2_value_state
-        }
+    screen_printf(
+        screen,
+        &text_coords,
+        "%sPress 'j', 'k' to go down/up and <space> to select/unselect\033[0m",
+        modifiers
     );
 
     text_coords.y = screen_size->rows -1;
-    screen_printf(screen, &text_coords, "Press <ESC> to terminate.");
+    screen_printf(
+        screen,
+        &text_coords,
+        "%sPress <ESC> to terminate.\033[0m",
+        modifiers
+    );
+
+    xre_use(
+        ctx,
+        "cb_bold",
+        checkbox,
+        (CheckboxProps) {
+            .is_focused = cb_index == 0,
+            .label = "Bold text",
+            .position = (ScreenCoordinates){0, 2},
+            .value_state=is_bold_state
+        }
+    );
+    xre_use(
+        ctx,
+        "sel_color",
+        selector,
+        (SelectorProps) {
+            .focused_option_index = cb_index - 1,
+            .option_count = color_option_count,
+            .labels = color_labels,
+            .values = color_values,
+            .position = (ScreenCoordinates){0, 3},
+            .value_state=color_state
+        }
+    );
+    xre_use(
+        ctx,
+        "cb_null",
+        checkbox,
+        (CheckboxProps) {
+            .is_focused = cb_index == 1 + color_option_count,
+            .label = "This checkbox does nothing",
+            .position = (ScreenCoordinates){0, 3 + color_option_count},
+            .value_state=NULL
+        }
+    );
 
     kbhit();
 };
 
 
-void checkbox(struct XREContext *ctx, va_list args) {
-    (void) ctx;
+void checkbox(XREContext *ctx, va_list args) {
+    static char const box_false_str[] = "   [ ]";
+    static char const box_true_str[] = "   [X]";
+    static char const box_foc_false_str[] = "-> [ ]";
+    static char const box_foc_true_str[] = "-> [X]";
 
-    //static char const box_false_str[] = "☐";
-    //static char const box_true_str[] = "☑";
-    static char const box_false_str[] = "[ ]";
-    static char const box_true_str[] = "[X]";
-    static char const box_foc_false_str[] = "> <";
-    static char const box_foc_true_str[] = ">X<";
+    CheckboxProps props = va_arg(args, CheckboxProps);
+    XREStateInt * inner_value_state = xre_use_int(ctx, 0);
 
-    struct CheckboxProps props = va_arg(args, struct CheckboxProps);
+    XREStateInt * value_state;
+    if (props.value_state == NULL) {
+        value_state = inner_value_state;
+    } else {
+        value_state = props.value_state;
+    }
 
-    int value = xre_state_get_int(props.value_state);
+    int value = xre_state_get_int(value_state);
     int pressed_key = kbhit();
     ungetc(pressed_key, stdin);
 
     if (props.is_focused && pressed_key == ' ') {
         value = (value + 1)%2;
-        xre_state_set_int(props.value_state, value);
+        xre_state_set_int(value_state, value);
     }
 
     char const * box_str = NULL;
@@ -203,3 +235,50 @@ void checkbox(struct XREContext *ctx, va_list args) {
 
     screen_printf(screen, &props.position, "%s %s", box_str, props.label);
 }
+
+
+void selector(XREContext *ctx, va_list args) {
+    (void) ctx;
+    static char const box_false_str[] = "   ( )";
+    static char const box_true_str[] = "   (X)";
+    static char const box_foc_false_str[] = "-> ( )";
+    static char const box_foc_true_str[] = "-> (X)";
+
+    SelectorProps props = va_arg(args, SelectorProps);
+    ScreenCoordinates position = props.position;
+
+    int value = xre_state_get_int(props.value_state);
+    int pressed_key = kbhit();
+    ungetc(pressed_key, stdin);
+
+    int focused_option_index = -1;
+    if (
+        props.focused_option_index >= 0
+        && props.focused_option_index < props.option_count
+    ) {
+        focused_option_index = props.focused_option_index;
+    }
+
+    if (focused_option_index >= 0 && pressed_key == ' ') {
+        value = props.values[focused_option_index];
+        xre_state_set_int(props.value_state, value);
+    }
+
+    for (int i = 0; i < props.option_count; i++) {
+        BOOL is_focused = props.focused_option_index == i;
+
+        char const * box_str = NULL;
+        if (is_focused && value == props.values[i]) {
+            box_str = box_foc_true_str;
+        } else if (is_focused && value != props.values[i]) {
+            box_str = box_foc_false_str;
+        } else if (!is_focused && value == props.values[i]) {
+            box_str = box_true_str;
+        } else if (!is_focused && value != props.values[i]) {
+            box_str = box_false_str;
+        }
+
+        screen_printf(screen, &position, "%s %s", box_str, props.labels[i]);
+        position.y++;
+    }
+};

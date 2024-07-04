@@ -5,13 +5,13 @@
 #include <stdlib.h>
 
 
-struct TerminalSize {
+typedef struct TerminalSize {
     size_t rows;
     size_t cols;
-};
+} TerminalSize;
 
 
-struct TerminalSize get_terminal_size(void);
+TerminalSize get_terminal_size(void);
 
 
 #endif
