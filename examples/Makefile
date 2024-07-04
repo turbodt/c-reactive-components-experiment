@@ -1,5 +1,5 @@
 SRC_DIR = src
-EXAMPLES = misc
+EXAMPLES = misc example1
 
 EXTERNAL_INCLUDES = -I../include
 EXTERNAL_LIBRARIES = -L../lib -lxre
