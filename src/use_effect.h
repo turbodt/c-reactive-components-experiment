@@ -13,12 +13,7 @@ typedef void (*XREEffectCleanUpFunction)(void *);
 typedef struct XREEffectCleanUp * (*XREEffect)(va_list);
 
 
-struct XREEffectRef {
-    struct XRERef ref;
-};
-
-
-struct XREEffectRef * xre_use_veffect(
+struct XRERef * xre_use_veffect(
     struct XREContext *,
     XREEffect,
     struct XRERef const * const[],
@@ -26,7 +21,7 @@ struct XREEffectRef * xre_use_veffect(
 );
 
 
-struct XREEffectRef * xre_use_effect(
+struct XRERef * xre_use_effect(
     struct XREContext *,
     XREEffect,
     struct XRERef const * const[],
@@ -42,7 +37,6 @@ struct XREEffectCleanUp * xre_effect_clean_up_alloc(
 
 #ifndef XRE_CONFIG_NOT_STRUCT_ALIAS
 typedef struct XREEffectCleanUp XREEffectCleanUp;
-typedef struct XREEffectRef XREEffectRef;
 #endif
 
 

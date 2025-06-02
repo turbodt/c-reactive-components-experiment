@@ -3,10 +3,6 @@
 #include "../base.h"
 
 
-#define TO_REF_PRIVATE(ref) ref
-#define TO_REF_PUBLIC(ref) ref
-
-
 #define CTX_STATE_TO_REF(state) ((struct XRERef *)xre_context_state_get(state))
 #define REF_TO_CTX_STATE(ref) ((ref)->state)
 
