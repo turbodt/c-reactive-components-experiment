@@ -24,22 +24,19 @@ static void * xre_effect_constructor(va_list);
 static void xre_effect_destructor(void *);
 static void xre_effect_assignator(void *, void const *);
 static XRE_BOOL xre_effect_comparator(void const *, void const *);
-static void call_effect(struct XREEffectRef *, va_list);
+static void call_effect(struct XRERef *, va_list);
 static void call_and_destroy_clean_up(EffectRefValue const *);
-static void xre_effect_set_effect(struct XREEffectRef *, XREEffect);
-static void xre_effect_set_clean_up(
-    struct XREEffectRef *,
-    XREEffectCleanUp *
-);
+static void xre_effect_set_effect(struct XRERef *, XREEffect);
+static void xre_effect_set_clean_up(struct XRERef *, XREEffectCleanUp *);
 
 
-struct XREEffectRef * xre_use_veffect(
+struct XRERef * xre_use_veffect(
     struct XREContext *ctx,
     XREEffect effect,
     struct XRERef const * const dependencies[],
     va_list effect_args
 ) {
-    struct XREEffectRef * effect_ref = (struct XREEffectRef *) xre_use_ref_ex(
+    struct XRERef * effect_ref = (struct XRERef *) xre_use_ref_ex(
         ctx,
         xre_effect_constructor,
         xre_effect_destructor,
@@ -48,14 +45,14 @@ struct XREEffectRef * xre_use_veffect(
         effect
     );
 
-    EffectRefValue const * curr_value = xre_ref_get_const(&effect_ref->ref);
+    EffectRefValue const * curr_value = xre_ref_get_const(effect_ref);
     if (effect != curr_value->effect) {
         xre_effect_set_effect(effect_ref, effect);
     }
 
     size_t index = 0;
     XRE_BOOL deps_have_changed = IS_NULL(dependencies)
-        || xre_ref_has_changed(&effect_ref->ref);
+        || xre_ref_has_changed(effect_ref);
     while (!deps_have_changed && !IS_NULL(dependencies[index])) {
         deps_have_changed = xre_ref_has_changed(dependencies[index]);
         index++;
@@ -69,7 +66,7 @@ struct XREEffectRef * xre_use_veffect(
 };
 
 
-struct XREEffectRef * xre_use_effect(
+struct XRERef * xre_use_effect(
     struct XREContext *ctx,
     XREEffect effect,
     struct XRERef const * const dependencies[],
@@ -77,7 +74,7 @@ struct XREEffectRef * xre_use_effect(
 ) {
     va_list effect_args;
     va_start(effect_args, dependencies);
-    struct XREEffectRef * ref = xre_use_veffect(
+    struct XRERef * ref = xre_use_veffect(
         ctx,
         effect,
         dependencies,
@@ -124,6 +121,7 @@ inline void * xre_effect_constructor(va_list args) {
     return value;
 };
 
+
 inline void xre_effect_destructor(void * value) {
     EffectRefValue * curr_value = (EffectRefValue *) value;
     curr_value->effect = NULL;
@@ -153,8 +151,8 @@ inline XRE_BOOL xre_effect_comparator(void const *curr, void const *new) {
 };
 
 
-inline void call_effect(struct XREEffectRef * effect_ref, va_list args) {
-    EffectRefValue * value = (EffectRefValue *) xre_ref_get(&effect_ref->ref);
+inline void call_effect(struct XRERef * effect_ref, va_list args) {
+    EffectRefValue * value = (EffectRefValue *) xre_ref_get(effect_ref);
 
     call_and_destroy_clean_up(value);
     value->clean_up = NULL;
@@ -179,26 +177,26 @@ inline void call_and_destroy_clean_up(EffectRefValue const * value) {
 
 
 inline void xre_effect_set_effect(
-    struct XREEffectRef *effect_ref,
-    XREEffect effect
+    struct XRERef *effect_ref,
+    XREEffect new_effect
 ) {
-    EffectRefValue * value = (EffectRefValue *) xre_ref_get(&effect_ref->ref);
+    EffectRefValue * value = (EffectRefValue *) xre_ref_get(effect_ref);
     EffectRefValue new_value = {
-        .effect=effect,
-        .clean_up=value->clean_up,
+        .effect = new_effect,
+        .clean_up = value->clean_up,
     };
-    xre_ref_set(&effect_ref->ref, &new_value);
+    xre_ref_set(effect_ref, &new_value);
 };
 
 
 inline void xre_effect_set_clean_up(
-    struct XREEffectRef *effect_ref,
-    XREEffectCleanUp * clean_up
+    struct XRERef *effect_ref,
+    XREEffectCleanUp * new_clean_up
 ) {
-    EffectRefValue * value = (EffectRefValue *) xre_ref_get(&effect_ref->ref);
+    EffectRefValue * value = (EffectRefValue *) xre_ref_get(effect_ref);
     EffectRefValue new_value = {
-        .effect=value->effect,
-        .clean_up=clean_up,
+        .effect = value->effect,
+        .clean_up = new_clean_up,
     };
-    xre_ref_set(&effect_ref->ref, &new_value);
+    xre_ref_set(effect_ref, &new_value);
 };
