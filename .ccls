@@ -1,3 +1,3 @@
 clang
-%c -Ilibs/uthash
+%c -Iexternal/uthash
 -std=c11

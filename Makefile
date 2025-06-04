@@ -1,10 +1,11 @@
-TARGET_NAME = xre
+LIB_NAME = xre
 SRC_DIR = ./src
 
-EXTERNAL_INCLUDES = $(GLOBAL_INCLUDES) -I./external/uthash
-EXTERNAL_LIBRARIES =
-LOCAL_INCLUDES = -I$(SRC_DIR)
-LOCAL_LIBRARIES =
+INCLUDES = \
+	-I./external/uthash \
+	-I$(SRC_DIR) \
+
+LIBRARIES :=
 
 #
 #
@@ -12,9 +13,7 @@ LOCAL_LIBRARIES =
 
 CC = gcc
 
-CFLAGS = -Wall -Wextra -fPIC -g $(EXTERNAL_INCLUDES) $(LOCAL_INCLUDES)
-
-LDFLAGS = $(LOCAL_LIBRARIES) $(EXTERNAL_LIBRARIES)
+CFLAGS = -Wall -Wextra -fPIC -g $(INCLUDES)
 
 SRC = $(wildcard \
         $(SRC_DIR)/impl/*.c \
@@ -22,24 +21,27 @@ SRC = $(wildcard \
         $(SRC_DIR)/use_value/impl/*.c \
       )
 
-OBJ_DIR = build
-OBJ = $(patsubst $(SRC_DIR)/%.c, $(OBJ_DIR)/%.o, $(SRC))
+OBJS_DIR = build
+OBJS = $(patsubst $(SRC_DIR)/%.c, $(OBJS_DIR)/%.o, $(SRC))
 
 LIB_DIR = lib
-SHARED_LIB = $(LIB_DIR)/lib$(TARGET_NAME).so
+SHARED_LIB = $(LIB_DIR)/lib$(LIB_NAME).so
+STATIC_LIB = $(LIB_DIR)/lib$(LIB_NAME).a
 
 #
 #
 #
 
-all: create_lib
+all: $(SHARED_LIB) $(STATIC_LIB)
 
-create_lib: $(SHARED_LIB)
+$(SHARED_LIB): $(OBJS) | $(LIB_DIR)
+	$(CC) -shared -o $@ $^ $(LIBRARIES)
 
-$(SHARED_LIB): $(OBJ) | $(LIB_DIR)
-	$(CC) -shared -o $@ $^
+$(STATIC_LIB): $(OBJS) | $(LIB_DIR)
+	mkdir -p $(LIB_DIR)
+	ar rcs $(STATIC_LIB) $(OBJS)
 
-$(OBJ_DIR)/%.o: src/%.c
+$(OBJS_DIR)/%.o: src/%.c
 	mkdir -p $(@D)
 	$(CC) $(CFLAGS) $(INCLUDES) -c $< -o $@
 
@@ -47,7 +49,7 @@ $(LIB_DIR):
 	mkdir -p $@
 
 clean:
-	rm -rf $(OBJ_DIR)
+	rm -rf $(OBJS_DIR)
 	rm -rf $(LIB_DIR)
 
 .PHONY: all clean
