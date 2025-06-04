@@ -1,5 +1,5 @@
 clang
-%c -I../libs/uthash
+%c -I../external/uthash
 %c -I../include
 %c -I./utils
 %c -I./hooks
