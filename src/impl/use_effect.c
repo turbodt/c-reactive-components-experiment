@@ -171,7 +171,9 @@ inline void call_and_destroy_clean_up(EffectRefValue const * value) {
     if (IS_NULL(value->clean_up)) {
         return;
     }
-    value->clean_up->fn(value->clean_up->props);
+    if (!IS_NULL(value->clean_up->fn)) {
+        value->clean_up->fn(value->clean_up->props);
+    }
     xre_effect_clean_up_destroy(value->clean_up);
 };
 

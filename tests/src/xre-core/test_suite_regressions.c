@@ -41,13 +41,13 @@ static int test_use_string_null_crashes_currently(void) {
 }
 
 static int test_effect_null_cleanup_crashes_currently(void) {
-    ASSERT_ISOLATED_SIGNALED(case_effect_null_cleanup, SIGSEGV);
+    ASSERT_ISOLATED_EXIT_OK(case_effect_null_cleanup);
     return 0;
 }
 
 static Test tests[] = {
     {.name="regression: xre_use_string(NULL) does not segfault", .call=&test_use_string_null_crashes_currently},
-    {.name="regression: null cleanup fn segfaults", .call=&test_effect_null_cleanup_crashes_currently},
+    {.name="regression: null cleanup fn does not segfault", .call=&test_effect_null_cleanup_crashes_currently},
     {.name="", .call=NULL},
 };
 
