@@ -29,4 +29,21 @@
 #define ASSERT_FLOAT_EQ(a, b, ...) ASSERT(fabs((double)(a)-(double)(b)) < 1e-9, ## __VA_ARGS__)
 
 
+#define ASSERT_ISOLATED_EXIT_OK(fn_call, ...) do { \
+    int __exit_code = -1; \
+    int __term_sig = 0; \
+    ASSERT_ZERO(test_run_isolated((fn_call), &__exit_code, &__term_sig)); \
+    ASSERT_ZERO(__term_sig, ## __VA_ARGS__); \
+    ASSERT_ZERO(__exit_code, ## __VA_ARGS__); \
+} while(0)
+
+
+#define ASSERT_ISOLATED_SIGNALED(fn_call, signal_number, ...) do { \
+    int __exit_code = -1; \
+    int __term_sig = 0; \
+    ASSERT_ZERO(test_run_isolated((fn_call), &__exit_code, &__term_sig)); \
+    ASSERT_EQ(__term_sig, (signal_number), ## __VA_ARGS__); \
+} while(0)
+
+
 #endif

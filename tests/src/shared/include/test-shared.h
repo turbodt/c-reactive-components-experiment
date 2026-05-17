@@ -4,6 +4,7 @@
 
 #include "./test-shared/config.h"
 #include "./test-shared/assertions_basic.h"
+#include <sys/types.h>
 
 
 #define CHANGE_ON_IMPL_MSG "This test is a placeholder until the feature" \
@@ -37,6 +38,9 @@
 #define LOG_SEP do {\
         printf("\n-----\n");\
     } while(0)
+
+
+int test_run_isolated(TestFn fn, int * exit_code, int * term_sig);
 
 
 #endif
