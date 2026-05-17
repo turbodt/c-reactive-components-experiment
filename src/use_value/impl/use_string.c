@@ -19,6 +19,7 @@ static void * constructor(va_list);
 static void destructor(void *);
 static void assignator(void *, void const *);
 static int comparator(void const *, void const *);
+static inline char const * normalize_string(char const *);
 
 
 struct XREStateString * xre_use_string(struct XREContext * ctx, char const * initial_value) {
@@ -65,7 +66,7 @@ void * constructor(va_list args) {
     xre_string->value = NULL;
     xre_string->len = 0;
 
-    char const * new_value = (char const *) va_arg(args, char const *);
+    char const * new_value = normalize_string((char const *) va_arg(args, char const *));
     assignator(xre_string, &new_value);
 
     return xre_string;
@@ -82,8 +83,9 @@ void destructor(void *xre_string) {
 void assignator(void *dst, void const *src) {
     XREString * str_dst = AS_XRE_STRING(dst);
     char const * const * p_src = (char const * const *) src;
+    char const * normalized_src = normalize_string(*p_src);
 
-    size_t len_src = strlen(*p_src);
+    size_t len_src = strlen(normalized_src);
 
     if (
         IS_NULL(str_dst->value)
@@ -93,12 +95,19 @@ void assignator(void *dst, void const *src) {
         str_dst->value = XRE_REALLOC(str_dst->value, char, len_src + 1);
     }
 
-    strncpy(str_dst->value, *p_src, len_src + 1);
+    strncpy(str_dst->value, normalized_src, len_src + 1);
+    str_dst->len = len_src;
 };
 
 
 int comparator(void const *curr, void const *new) {
     XREString * str_curr = AS_XRE_STRING(curr);
     char const * const * p_new = (char const * const *) new;
-    return strcmp(str_curr->value, *p_new);
+    char const * normalized_new = normalize_string(*p_new);
+    return strcmp(str_curr->value, normalized_new);
 };
+
+
+inline char const * normalize_string(char const * value) {
+    return IS_NULL(value) ? "" : value;
+}

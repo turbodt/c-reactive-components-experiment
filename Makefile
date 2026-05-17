@@ -3,6 +3,7 @@ SRC_DIR = ./src
 
 INCLUDES = \
 	-I./external/uthash \
+	-I./include \
 	-I$(SRC_DIR) \
 
 LIBRARIES :=
@@ -24,7 +25,7 @@ SRC = $(wildcard \
 OBJS_DIR = build
 OBJS = $(patsubst $(SRC_DIR)/%.c, $(OBJS_DIR)/%.o, $(SRC))
 
-LIB_DIR = lib
+LIB_DIR = $(realpath ./)/lib
 SHARED_LIB = $(LIB_DIR)/lib$(LIB_NAME).so
 STATIC_LIB = $(LIB_DIR)/lib$(LIB_NAME).a
 
@@ -48,8 +49,21 @@ $(OBJS_DIR)/%.o: src/%.c
 $(LIB_DIR):
 	mkdir -p $@
 
+tests:
+	$(MAKE) clean
+	$(MAKE) all
+	$(MAKE) clean -C ./tests
+	$(MAKE) -C ./tests \
+		MAIN_DIR=$(realpath ./) \
+		EXTERNAL_INCLUDES="$(INCLUDES)" \
+		EXTERNAL_LIBRARIES="-L$(LIB_DIR) -l$(LIB_NAME)"
+
 clean:
+	$(MAKE) clean -C ./tests
 	rm -rf $(OBJS_DIR)
 	rm -rf $(LIB_DIR)
 
-.PHONY: all clean
+run-tests: tests
+	./tests/bin/tests
+
+.PHONY: all clean tests run-tests

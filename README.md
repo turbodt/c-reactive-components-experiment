@@ -17,7 +17,8 @@
 		2. [Use effect](#use-effect)
 	4. [Example](#example)
 5. [Dependencies](#dependencies)
-6. [License](#license)
+6. [Changelog](#changelog)
+7. [License](#license)
 
 
 ## Description
@@ -281,6 +282,12 @@ This library only depends on the [UTHash](https://troydhanson.github.io/uthash/)
 
 
 The current make file expects this header file to be inside a folder called `./external/uthash`.
+
+
+## Changelog
+
+
+See `CHANGELOG.md` for release notes and version history.
 
 
 ## License
