@@ -3,6 +3,7 @@ SRC_DIR = ./src
 
 INCLUDES = \
 	-I./external/uthash \
+	-I./include \
 	-I$(SRC_DIR) \
 
 LIBRARIES :=
@@ -63,6 +64,6 @@ clean:
 	rm -rf $(LIB_DIR)
 
 run-tests: tests
-	./bin/tests
+	./tests/bin/tests
 
 .PHONY: all clean tests run-tests

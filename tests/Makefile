@@ -6,10 +6,12 @@ MAIN_DIR ?= $(realpath ../)
 INCLUDES = $(EXTERNAL_INCLUDES) \
 	-I./src/shared/include \
 	-I./src/module-example/include \
+	-I./src/xre-core/include \
 	-I$(SRC_DIR) \
 
 LIBRARIES = \
 	-L./src/module-example/lib -ltest-module-example \
+	-L./src/xre-core/lib -ltest-xre-core \
 	-L./src/shared/lib -ltest-shared \
 	$(EXTERNAL_LIBRARIES)
 
@@ -52,10 +54,15 @@ submodules:
 		MAIN_DIR=$(MAIN_DIR) \
 		EXTERNAL_INCLUDES="$(EXTERNAL_INCLUDES)" \
 		EXTERNAL_LIBRARIES="$(EXTERNAL_LIBRARIES)"
+	$(MAKE) -C ./src/xre-core \
+		MAIN_DIR=$(MAIN_DIR) \
+		EXTERNAL_INCLUDES="$(EXTERNAL_INCLUDES)" \
+		EXTERNAL_LIBRARIES="$(EXTERNAL_LIBRARIES)"
 
 clean:
 	rm -rf $(OBJ_DIR) $(TARGET)
 	$(MAKE) clean -C ./src/shared
 	$(MAKE) clean -C ./src/module-example
+	$(MAKE) clean -C ./src/xre-core
 
 .PHONY: all clean
