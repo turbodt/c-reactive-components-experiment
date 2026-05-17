@@ -1,0 +1,5 @@
+gcc
+%c -I../include
+%c -I./src/shared/include
+%c -I./src/module-example/include
+-std=c99
